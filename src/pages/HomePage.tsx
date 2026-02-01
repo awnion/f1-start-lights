@@ -72,21 +72,23 @@ export function HomePage() {
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
+    // Sequence: 1 light per second
     for (let i = 1; i <= 5; i++) {
       const timer = setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
+    // After 5th light (at 5000ms), wait exactly 1 second (at 6000ms) before starting random hold
     const prepareTimer = setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200;
+      const randomHold = Math.random() * 2800 + 200; // 200ms to 3000ms
       const holdTimer = setTimeout(() => {
         lightsOutTimeRef.current = performance.now();
         setGameState('WAITING');
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(holdTimer);
-    }, 5000);
+    }, 6000); 
     activeTimersRef.current.push(prepareTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent) => {
@@ -244,6 +246,29 @@ export function HomePage() {
           </div>
         </main>
         <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
+          <RetroCard title="Hall of Fame">
+            <div className="space-y-2">
+              {PRO_BENCHMARKS.map((pro, idx) => (
+                <div key={idx} className="flex justify-between items-center text-[11px] font-mono py-1.5 border-b border-neutral-800/30 last:border-0">
+                  <div className="flex flex-col">
+                    <span className="text-neutral-200 font-bold uppercase">{pro.name}</span>
+                    <span className="text-[9px] text-neutral-600 uppercase tracking-tighter">{pro.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "font-black tabular-nums",
+                      bestTime <= pro.time ? "text-accent" : "text-neutral-500"
+                    )}>
+                      {pro.time.toFixed(3)}s
+                    </span>
+                    {bestTime <= pro.time && (
+                      <Zap className="w-2.5 h-2.5 text-amber-500" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </RetroCard>
           <RetroCard title="Session Analytics">
             <div className="space-y-4">
               <div className="flex justify-between items-center bg-neutral-950/50 p-4 border border-neutral-800/50">
@@ -275,29 +300,6 @@ export function HomePage() {
                   Purge Buffer
                 </Button>
               </div>
-            </div>
-          </RetroCard>
-          <RetroCard title="Hall of Fame">
-            <div className="space-y-2">
-              {PRO_BENCHMARKS.map((pro, idx) => (
-                <div key={idx} className="flex justify-between items-center text-[11px] font-mono py-1.5 border-b border-neutral-800/30 last:border-0">
-                  <div className="flex flex-col">
-                    <span className="text-neutral-200 font-bold uppercase">{pro.name}</span>
-                    <span className="text-[9px] text-neutral-600 uppercase tracking-tighter">{pro.label}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "font-black tabular-nums",
-                      bestTime <= pro.time ? "text-accent" : "text-neutral-500"
-                    )}>
-                      {pro.time.toFixed(3)}s
-                    </span>
-                    {bestTime <= pro.time && (
-                      <Zap className="w-2.5 h-2.5 text-amber-500" />
-                    )}
-                  </div>
-                </div>
-              ))}
             </div>
           </RetroCard>
           <RetroCard title="Data Stream">
