@@ -75,7 +75,7 @@ export function HomePage() {
     clearAllTimers();
     processingRef.current = false;
     lightsOutTimeRef.current = 0;
-    expectedLightsOutRef.current = 0; // Explicitly reset before new run
+    expectedLightsOutRef.current = 0;
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
@@ -115,10 +115,9 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
-    // Immediate early exit check for double-tap/noise
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     const previousActionTime = lastActionTimeRef.current;
-    lastActionTimeRef.current = now; // Update timestamp immediately to block concurrent events
+    lastActionTimeRef.current = now;
     if (processingRef.current) return;
     if (gameState === 'IDLE') {
       startSequence();
@@ -276,19 +275,30 @@ export function HomePage() {
           <RetroCard title="F1 Driver Benchmarks">
             <div className="space-y-0">
               {PRO_BENCHMARKS.map((pro, idx) => (
-                <div key={idx} className="flex justify-between items-center py-4 border-b border-neutral-800/40 last:border-0 group">
-                  <div className="flex flex-col">
-                    <span className="text-neutral-200 font-bold uppercase text-base group-hover:text-primary transition-colors">{pro.name}</span>
-                    <span className="text-[10px] text-neutral-600 uppercase tracking-widest">{pro.label}</span>
+                <div key={idx} className="flex justify-between items-center py-5 border-b border-neutral-800/40 last:border-0 hover:bg-white/[0.02] transition-colors group px-1">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-10 flex items-center justify-center opacity-20">
+                      <Zap className="w-4 h-4 text-neutral-400" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-neutral-200 font-bold uppercase text-sm sm:text-base leading-tight">
+                        {pro.name}
+                      </span>
+                      <span className="text-[10px] text-neutral-600 uppercase tracking-widest font-black">
+                        {pro.label}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={cn(
-                      "font-black tabular-nums font-mono text-2xl tracking-tighter",
+                      "font-black tabular-nums font-mono text-xl sm:text-2xl tracking-tighter leading-none",
                       bestTime <= pro.time ? "text-accent" : "text-neutral-600"
                     )}>
                       {pro.time.toFixed(3)}s
                     </span>
-                    {bestTime <= pro.time && <Zap className="w-4 h-4 text-amber-500 animate-pulse" />}
+                    <div className="w-6 flex items-center justify-center">
+                      {bestTime <= pro.time && <Zap className="w-4 h-4 text-amber-500 animate-pulse" />}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -297,37 +307,38 @@ export function HomePage() {
           <RetroCard title="Personal Top 5">
             <div className="space-y-0">
               {topTimes.length === 0 ? (
-                <div className="h-48 flex flex-col items-center justify-center text-neutral-800">
+                <div className="h-[430px] flex flex-col items-center justify-center text-neutral-800">
                   <p className="text-xs uppercase font-bold tracking-[0.4em] opacity-40">Awaiting your first run</p>
                 </div>
               ) : (
                 topTimes.map((attempt, idx) => {
                   const perf = getPerformanceMessage(attempt.time);
                   return (
-                    <div key={attempt.id} className="flex items-center justify-between font-mono py-4 border-b border-neutral-800/40 last:border-0 group">
-                      <div className="flex items-center gap-4">
+                    <div key={attempt.id} className="flex items-center justify-between py-5 border-b border-neutral-800/40 last:border-0 hover:bg-white/[0.02] transition-colors group px-1">
+                      <div className="flex items-center gap-4 flex-1">
                         <span className={cn(
-                          "text-2xl font-black italic w-10 text-center",
-                          idx === 0 ? "text-amber-500" : "text-neutral-800 group-hover:text-neutral-600 transition-colors"
+                          "text-xl sm:text-2xl font-black italic w-10 text-center leading-none",
+                          idx === 0 ? "text-amber-500" : "text-neutral-800 transition-colors"
                         )}>
                           #{idx + 1}
                         </span>
                         <div className="flex flex-col">
-                          <span className={cn("font-black text-sm uppercase tracking-widest", perf.color)}>
+                          <span className={cn("font-black text-sm sm:text-base uppercase tracking-wider leading-tight", perf.color)}>
                             {perf.label}
                           </span>
-                          <span className="text-[10px] text-neutral-600 uppercase font-bold">
+                          <span className="text-[10px] text-neutral-600 uppercase font-black tracking-widest">
                             {new Date(attempt.timestamp).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className={cn(
-                          "font-black tabular-nums text-2xl tracking-tighter",
+                          "font-black tabular-nums font-mono text-xl sm:text-2xl tracking-tighter leading-none",
                           idx === 0 ? "text-accent" : "text-white"
                         )}>
                           {attempt.time.toFixed(3)}s
                         </span>
+                        <div className="w-6" />
                       </div>
                     </div>
                   );
