@@ -8,8 +8,8 @@ import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 const STORAGE_KEY = 'f1_reflex_history_v3';
-const INPUT_DEBOUNCE_MS = 150;
-const RESULT_COOLDOWN_MS = 400;
+const INPUT_DEBOUNCE_MS = 100;
+const RESULT_COOLDOWN_MS = 300;
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
@@ -39,7 +39,7 @@ export function HomePage() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? parsed.slice(0, 20) : [];
+        return Array.isArray(parsed) ? parsed.slice(0, 50) : [];
       }
     } catch (e) {
       console.error("Failed to load records:", e);
@@ -54,7 +54,7 @@ export function HomePage() {
     }
   }, [history]);
   const clearAllTimers = useCallback(() => {
-    activeTimersRef.current.forEach(timer => clearTimeout(timer));
+    activeTimersRef.current.forEach(timer => window.clearTimeout(timer));
     activeTimersRef.current = [];
   }, []);
   useEffect(() => {
@@ -71,16 +71,20 @@ export function HomePage() {
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
+    // Sequence lights 1-5 at 1s intervals
     for (let i = 1; i <= 5; i++) {
       const timer = window.setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
+    // Start randomized hold after 5s (when all lights are lit)
     const prepareTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200;
+      const randomHold = Math.random() * 2800 + 200; // 0.2s to 3s hold
       const holdTimer = window.setTimeout(() => {
-        lightsOutTimeRef.current = performance.now();
+        // High-precision capture immediately before state update
+        const now = performance.now();
+        lightsOutTimeRef.current = now;
         setGameState('WAITING');
         setActiveLights(0);
       }, randomHold);
@@ -102,28 +106,33 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
+    // 1. Debounce rapid spam
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     lastActionTimeRef.current = now;
+    // 2. Prevent double processing within a single loop
     if (processingRef.current) return;
+    // 3. Logic based on state
     if (gameState === 'IDLE') {
       startSequence();
       return;
     }
     if (gameState === 'RESULT' || gameState === 'JUMP_START') {
-      if (now - (lightsOutTimeRef.current || 0) < RESULT_COOLDOWN_MS) return;
+      // Cooldown to ensure users see their time before accidentally restarting
+      if (now - lastActionTimeRef.current < RESULT_COOLDOWN_MS) return; 
       startSequence();
       return;
     }
     if (gameState === 'COUNTDOWN') {
+      // Jump start: User pressed while lights are still sequencing
       processingRef.current = true;
       clearAllTimers();
       setGameState('JUMP_START');
       setLastReaction(0);
-      lightsOutTimeRef.current = now;
-      setHistory(prev => [{ id: crypto.randomUUID(), time: 0, timestamp: Date.now() }, ...prev].slice(0, 20));
+      setHistory(prev => [{ id: crypto.randomUUID(), time: 0, timestamp: Date.now() }, ...prev].slice(0, 50));
       return;
     }
     if (gameState === 'WAITING') {
+      // Valid reaction: Lights are out
       processingRef.current = true;
       const reaction = (now - lightsOutTimeRef.current) / 1000;
       const isNewPB = history.length === 0 || (reaction > 0 && reaction < bestTime);
@@ -138,7 +147,7 @@ export function HomePage() {
           colors: ['#ff0033', '#39ff14', '#ffffff', '#fbbf24']
         });
       }
-      setHistory(prev => [{ id: crypto.randomUUID(), time: reaction, timestamp: Date.now() }, ...prev].slice(0, 20));
+      setHistory(prev => [{ id: crypto.randomUUID(), time: reaction, timestamp: Date.now() }, ...prev].slice(0, 50));
       return;
     }
   }, [gameState, startSequence, clearAllTimers, history, bestTime]);
@@ -177,6 +186,7 @@ export function HomePage() {
       className="min-h-screen bg-neutral-950 flex flex-col items-center touch-none overflow-x-hidden select-none relative"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
+        // Don't trigger if user clicks buttons or cards
         if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger="true"]')) return;
         handleTrigger();
       }}
@@ -221,7 +231,7 @@ export function HomePage() {
               )}
               {gameState === 'WAITING' && (
                 <motion.div key="waiting" className="h-full flex items-center justify-center">
-                   {/* Silent tension */}
+                   {/* Tension build - silent and still */}
                 </motion.div>
               )}
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
@@ -347,6 +357,7 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
+      {/* Retro CRT Overlays */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.2),rgba(0,255,0,0.1),rgba(0,0,255,0.2))] bg-[length:100%_4px,3px_100%]" />
         <div className="absolute inset-0 opacity-[0.01] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
