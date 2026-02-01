@@ -189,13 +189,10 @@ export function HomePage() {
             </div>
             <h1 className="text-3xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
           </div>
-          <div className="hidden sm:flex flex-col items-end">
-             <span className="text-[10px] text-accent font-bold uppercase tracking-widest animate-pulse">Live Telemetry active</span>
-             <span className="text-[8px] text-neutral-600 font-mono uppercase">V3.0.4-PixelPerfect</span>
-          </div>
+          {/* Metadata removed for professional simulator standard */}
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
-          <div className="w-full flex justify-center items-end">
+          <div className="w-full flex justify-center items-start">
             <Semaphore lightsActive={activeLights} />
           </div>
           <div className="text-center h-48 sm:h-64 flex flex-col items-center justify-center w-full">
@@ -226,7 +223,7 @@ export function HomePage() {
               )}
               {gameState === 'WAITING' && (
                 <motion.div key="waiting" className="h-full flex items-center justify-center">
-                   <p className="text-white font-black text-3xl sm:text-6xl tracking-[0.8em] uppercase animate-glitch">WATCH</p>
+                   {/* Instruction text removed to heighten tension during WAITING state */}
                 </motion.div>
               )}
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
@@ -352,11 +349,8 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
-      {/* Primary CRT Overlays: Consolidated for performance */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
-        {/* Scanlines and RGB Shift */}
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.2),rgba(0,255,0,0.1),rgba(0,0,255,0.2))] bg-[length:100%_4px,3px_100%]" />
-        {/* Static noise flicker */}
         <div className="absolute inset-0 opacity-[0.01] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
       </div>
     </div>
