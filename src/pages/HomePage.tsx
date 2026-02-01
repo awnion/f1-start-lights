@@ -60,13 +60,17 @@ export function HomePage() {
     const validTimes = history.filter(a => a.time > 0).map(a => a.time);
     return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
   }, [history]);
-  const isNewBest = useMemo(() => {
-    if (lastReaction === null || lastReaction <= 0) return false;
-    if (history.length <= 1) return lastReaction <= 0.220;
-    return lastReaction <= bestTime;
-  }, [lastReaction, bestTime, history.length]);
+  // Unified achievement logic: Beating previous best OR elite sub-200ms on first try
+  const isAchievement = useCallback((time: number) => {
+    if (time <= 0) return false;
+    const isElite = time < 0.200;
+    const isNewPB = history.length === 0 || time < bestTime;
+    return isElite || isNewPB;
+  }, [bestTime, history.length]);
   const startSequence = useCallback(() => {
     clearAllTimers();
+    // Strict ref reset for zero timing carry-over
+    lightsOutTimeRef.current = 0;
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
@@ -77,6 +81,7 @@ export function HomePage() {
       activeTimersRef.current.push(timer);
     }
     const prepareTimer = setTimeout(() => {
+      // Logic for random hold time between 0.2s and 3.0s
       const randomHold = Math.random() * 2800 + 200;
       const holdTimer = setTimeout(() => {
         lightsOutTimeRef.current = performance.now();
@@ -84,12 +89,13 @@ export function HomePage() {
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(holdTimer);
-    }, 6000);
+    }, 5000); // 5 seconds is when all lights are finally on
     activeTimersRef.current.push(prepareTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     clearAllTimers();
+    lightsOutTimeRef.current = 0;
     setGameState('IDLE');
     setActiveLights(0);
     setLastReaction(null);
@@ -111,22 +117,21 @@ export function HomePage() {
       const reaction = (now - lightsOutTimeRef.current) / 1000;
       setLastReaction(reaction);
       setGameState('RESULT');
-      const isRecord = (reaction <= bestTime && history.length > 0) || reaction < 0.200;
-      if (isRecord) {
+      if (isAchievement(reaction)) {
         confetti({
-          particleCount: reaction < 0.180 ? 200 : 100,
-          spread: 80,
+          particleCount: reaction < 0.180 ? 250 : 150,
+          spread: 90,
           origin: { y: 0.6 },
-          colors: ['#ff0033', '#39ff14', '#ffffff']
+          colors: ['#ff0033', '#39ff14', '#ffffff', '#fbbf24']
         });
       }
       setHistory(prev => [{ id: crypto.randomUUID(), time: reaction, timestamp: Date.now() }, ...prev].slice(0, 15));
       return;
     }
-  }, [gameState, startSequence, clearAllTimers, bestTime, history.length]);
+  }, [gameState, startSequence, clearAllTimers, isAchievement]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameState === 'IDLE' || gameState === 'COUNTDOWN' || gameState === 'WAITING') {
+      if (['IDLE', 'COUNTDOWN', 'WAITING'].includes(gameState)) {
         if (e.code === 'Space' || e.code === 'Enter') {
           e.preventDefault();
           handleTrigger();
@@ -161,8 +166,9 @@ export function HomePage() {
       className="min-h-screen bg-neutral-950 flex flex-col items-center scanline touch-none overflow-x-hidden select-none"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
-        if (target.closest('button') || target.closest('a')) return;
-        if (gameState === 'IDLE' || gameState === 'COUNTDOWN' || gameState === 'WAITING') {
+        // Prevent trigger when clicking interactive elements or statistics log
+        if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger]')) return;
+        if (['IDLE', 'COUNTDOWN', 'WAITING'].includes(gameState)) {
           handleTrigger();
         }
       }}
@@ -179,7 +185,7 @@ export function HomePage() {
             </div>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">v2.1.0-PRO</span>
+            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">v2.2.0-FINAL</span>
           </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-center gap-8 sm:gap-16">
@@ -218,15 +224,15 @@ export function HomePage() {
                 >
                   <div className="relative inline-block">
                     <p className={cn(
-                      "text-5xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tabular-nums tracking-tighter leading-none px-2",
+                      "text-4xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tabular-nums tracking-tighter leading-none px-2",
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch' : 'text-accent',
-                      isNewBest && gameState === 'RESULT' && "animate-glitch"
+                      lastReaction !== null && isAchievement(lastReaction) && gameState === 'RESULT' && "animate-glitch"
                     )}>
                       {gameState === 'JUMP_START' ? 'JUMP' : `${lastReaction?.toFixed(3)}s`}
                     </p>
-                    {isNewBest && gameState === 'RESULT' && (
+                    {lastReaction !== null && isAchievement(lastReaction) && gameState === 'RESULT' && (
                       <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-8 bg-amber-500 text-black text-[8px] sm:text-[10px] px-2 py-1 font-black uppercase shadow-glow z-20 border border-black transform rotate-12 whitespace-nowrap">
-                        NEW BEST
+                        ACHIEVEMENT
                       </div>
                     )}
                   </div>
@@ -247,7 +253,7 @@ export function HomePage() {
             </AnimatePresence>
           </div>
         </main>
-        <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
           <RetroCard title="Session Stats">
             <div className="space-y-4">
               <div className="flex justify-between items-center bg-neutral-950/50 p-3 border border-neutral-800/50">
