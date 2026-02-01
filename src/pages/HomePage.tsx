@@ -70,18 +70,21 @@ export function HomePage() {
     clearAllTimers();
     processingRef.current = false;
     lightsOutTimeRef.current = 0;
+    expectedLightsOutRef.current = 0; // Hardened: Clear stale data
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
     setIsNewRecord(false);
+    // 5 lights, 1s apart
     for (let i = 1; i <= 5; i++) {
       const timer = window.setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
+    // After 5s (when 5th light turns on), wait 1s more then start randomized hold
     const holdTriggerTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200;
+      const randomHold = Math.random() * 2800 + 200; // 0.2s to 3s
       expectedLightsOutRef.current = performance.now() + randomHold;
       const goTimer = window.setTimeout(() => {
         const now = performance.now();
@@ -90,7 +93,7 @@ export function HomePage() {
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(goTimer);
-    }, 5000);
+    }, 6000); // Changed from 5000 to 6000 for perfect 1s cadence after 5th light
     activeTimersRef.current.push(holdTriggerTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent | React.PointerEvent) => {
@@ -101,6 +104,7 @@ export function HomePage() {
     clearAllTimers();
     processingRef.current = false;
     lightsOutTimeRef.current = 0;
+    expectedLightsOutRef.current = 0;
     setGameState('IDLE');
     setActiveLights(0);
     setLastReaction(null);
@@ -108,6 +112,7 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
+    // Prevent double triggers
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     if (processingRef.current) return;
     if (gameState === 'IDLE') {
@@ -125,8 +130,9 @@ export function HomePage() {
       lastActionTimeRef.current = now;
       processingRef.current = true;
       clearAllTimers();
-      const jumpTime = expectedLightsOutRef.current > 0
-        ? (now - expectedLightsOutRef.current) / 1000
+      // Calculate jump time relative to expected go if sequence was already in hold phase
+      const jumpTime = expectedLightsOutRef.current > 0 
+        ? (now - expectedLightsOutRef.current) / 1000 
         : -1.0;
       setGameState('JUMP_START');
       setLastReaction(jumpTime);
@@ -186,7 +192,7 @@ export function HomePage() {
     return valid.length === 0 ? 0 : valid.reduce((acc, curr) => acc + curr.time, 0) / valid.length;
   }, [history]);
   return (
-    <div
+    <div 
       className="min-h-screen bg-neutral-950 flex flex-col items-center touch-none select-none relative"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
@@ -219,8 +225,8 @@ export function HomePage() {
           <div className="text-center h-48 sm:h-64 flex flex-col items-center justify-center w-full">
             <AnimatePresence mode="wait">
               {gameState === 'IDLE' && (
-                <motion.div
-                  key="idle"
+                <motion.div 
+                  key="idle" 
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   className="space-y-4"
                 >
@@ -230,8 +236,8 @@ export function HomePage() {
                 </motion.div>
               )}
               {gameState === 'COUNTDOWN' && (
-                <motion.div
-                  key="countdown"
+                <motion.div 
+                  key="countdown" 
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   className="flex flex-col items-center"
                 >
@@ -244,8 +250,8 @@ export function HomePage() {
                 </motion.div>
               )}
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
-                <motion.div
-                  key="result"
+                <motion.div 
+                  key="result" 
                   initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                   className="flex flex-col items-center gap-4 sm:gap-6 w-full"
                 >
@@ -255,8 +261,8 @@ export function HomePage() {
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch whitespace-nowrap' : 'text-accent',
                       isNewRecord && "animate-glitch text-amber-400"
                     )}>
-                      {gameState === 'JUMP_START'
-                        ? 'JUMP START'
+                      {gameState === 'JUMP_START' 
+                        ? 'JUMP START' 
                         : `${lastReaction?.toFixed(3)}s`
                       }
                     </p>
@@ -272,7 +278,7 @@ export function HomePage() {
                         {getPerformanceMessage(lastReaction ?? 0).label}
                       </p>
                     )}
-                    <Button
+                    <Button 
                       onClick={resetToIdle}
                       className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.3em] px-6 sm:px-10 py-3 sm:py-4 rounded-none glow-red h-auto text-xs sm:text-lg group w-full sm:w-auto mt-2"
                     >
@@ -329,9 +335,9 @@ export function HomePage() {
                 </span>
               </div>
               <div className="pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
+                <Button 
+                  variant="outline" 
+                  size="sm" 
                   className="w-full border-neutral-800 bg-neutral-900/50 text-neutral-600 hover:text-red-500 hover:border-red-900/50 transition-all uppercase text-[10px] tracking-[0.2em] h-10 rounded-none font-bold"
                   onClick={clearData}
                 >
