@@ -8,6 +8,8 @@ import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 const STORAGE_KEY = 'f1_reflex_history_v3';
+const INPUT_DEBOUNCE_MS = 150; // Prevent rapid double-triggers
+const RESULT_COOLDOWN_MS = 400; // Delay before a result screen allows a restart
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
@@ -28,6 +30,7 @@ export function HomePage() {
   const lightsOutTimeRef = useRef<number>(0);
   const activeTimersRef = useRef<number[]>([]);
   const processingRef = useRef<boolean>(false);
+  const lastActionTimeRef = useRef<number>(0);
   useEffect(() => {
     document.title = "F1 REFLEX | High-Precision Semaphore";
   }, []);
@@ -68,13 +71,16 @@ export function HomePage() {
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
-    // Sequence: 1 light per second
+    // Sequence: 1 light per second (0s-4s)
+    // 1st light at 1s, 2nd at 2s, 3rd at 3s, 4th at 4s, 5th at 5s
     for (let i = 1; i <= 5; i++) {
       const timer = window.setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
+    // Immediately after the 5th light (at 5 seconds), trigger the random hold period.
+    // Previous code had an extra 1s delay (6s total).
     const prepareTimer = window.setTimeout(() => {
       const randomHold = Math.random() * 2800 + 200;
       const holdTimer = window.setTimeout(() => {
@@ -83,11 +89,14 @@ export function HomePage() {
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(holdTimer);
-    }, 6000);
+    }, 5000);
     activeTimersRef.current.push(prepareTimer);
   }, [clearAllTimers]);
-  const resetToIdle = useCallback((e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const resetToIdle = useCallback((e?: React.MouseEvent | React.PointerEvent) => {
+    if (e) {
+      e.stopPropagation();
+      if ('preventDefault' in e) e.preventDefault();
+    }
     clearAllTimers();
     processingRef.current = false;
     lightsOutTimeRef.current = 0;
@@ -96,9 +105,19 @@ export function HomePage() {
     setLastReaction(null);
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
-    if (processingRef.current) return;
     const now = performance.now();
-    if (gameState === 'IDLE' || gameState === 'RESULT' || gameState === 'JUMP_START') {
+    // Hard debounce to prevent mechanical chatter or accidental double taps
+    if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
+    lastActionTimeRef.current = now;
+    if (processingRef.current) return;
+    // Logic for starting/restarting
+    if (gameState === 'IDLE') {
+      startSequence();
+      return;
+    }
+    if (gameState === 'RESULT' || gameState === 'JUMP_START') {
+      // Cooldown after result to prevent accidental instant restart from the "click" that finished the game
+      if (now - (lightsOutTimeRef.current || 0) < RESULT_COOLDOWN_MS) return;
       startSequence();
       return;
     }
@@ -107,6 +126,8 @@ export function HomePage() {
       clearAllTimers();
       setGameState('JUMP_START');
       setLastReaction(0);
+      // Record jump start timestamp for debounce logic
+      lightsOutTimeRef.current = now; 
       setHistory(prev => [{ id: crypto.randomUUID(), time: 0, timestamp: Date.now() }, ...prev].slice(0, 20));
       return;
     }
@@ -131,6 +152,7 @@ export function HomePage() {
   }, [gameState, startSequence, clearAllTimers, history, bestTime]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return; // Ignore key repeat
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
         handleTrigger();
