@@ -8,8 +8,8 @@ import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 const STORAGE_KEY = 'f1_reflex_history_v3';
-const INPUT_DEBOUNCE_MS = 100;
-const RESULT_COOLDOWN_MS = 300;
+const INPUT_DEBOUNCE_MS = 150;
+const RESULT_COOLDOWN_MS = 600;
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
@@ -27,6 +27,7 @@ export function HomePage() {
   const [gameState, setGameState] = useState<GameState>('IDLE');
   const [activeLights, setActiveLights] = useState(0);
   const [lastReaction, setLastReaction] = useState<number | null>(null);
+  const [isNewRecord, setIsNewRecord] = useState(false);
   const lightsOutTimeRef = useRef<number>(0);
   const activeTimersRef = useRef<number[]>([]);
   const processingRef = useRef<boolean>(false);
@@ -71,6 +72,7 @@ export function HomePage() {
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
+    setIsNewRecord(false);
     // Sequence lights 1-5 at 1s intervals
     for (let i = 1; i <= 5; i++) {
       const timer = window.setTimeout(() => {
@@ -78,18 +80,17 @@ export function HomePage() {
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
-    // Start randomized hold after 5s (when all lights are lit)
+    // After the 5th light is on (at 5s), wait exactly 1s before starting the random hold
     const prepareTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200; // 0.2s to 3s hold
+      const randomHold = Math.random() * 2500 + 500; // 0.5s to 3s hold for realism
       const holdTimer = window.setTimeout(() => {
-        // High-precision capture immediately before state update
         const now = performance.now();
         lightsOutTimeRef.current = now;
         setGameState('WAITING');
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(holdTimer);
-    }, 5000);
+    }, 6000); // 5s for sequence + 1s hold stability
     activeTimersRef.current.push(prepareTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent | React.PointerEvent) => {
@@ -103,27 +104,29 @@ export function HomePage() {
     setGameState('IDLE');
     setActiveLights(0);
     setLastReaction(null);
+    setIsNewRecord(false);
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
-    // 1. Debounce rapid spam
+    // 1. Debounce rapid spam (ignore if too close to previous action)
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
-    lastActionTimeRef.current = now;
-    // 2. Prevent double processing within a single loop
+    // 2. Prevent double processing
     if (processingRef.current) return;
     // 3. Logic based on state
     if (gameState === 'IDLE') {
+      lastActionTimeRef.current = now;
       startSequence();
       return;
     }
     if (gameState === 'RESULT' || gameState === 'JUMP_START') {
-      // Cooldown to ensure users see their time before accidentally restarting
+      // Cooldown check for restart to prevent accidental double-taps
       if (now - lastActionTimeRef.current < RESULT_COOLDOWN_MS) return;
+      lastActionTimeRef.current = now;
       startSequence();
       return;
     }
     if (gameState === 'COUNTDOWN') {
-      // Jump start: User pressed while lights are still sequencing
+      lastActionTimeRef.current = now;
       processingRef.current = true;
       clearAllTimers();
       setGameState('JUMP_START');
@@ -132,17 +135,19 @@ export function HomePage() {
       return;
     }
     if (gameState === 'WAITING') {
-      // Valid reaction: Lights are out
+      lastActionTimeRef.current = now;
       processingRef.current = true;
       const reaction = (now - lightsOutTimeRef.current) / 1000;
-      const isNewPB = history.length === 0 || (reaction > 0 && reaction < bestTime);
+      const currentPB = bestTime;
+      const isPB = reaction > 0 && reaction < currentPB;
       const isElite = reaction > 0 && reaction < 0.200;
       setLastReaction(reaction);
+      setIsNewRecord(isPB && history.length > 0);
       setGameState('RESULT');
-      if (isNewPB || isElite) {
+      if (isPB || isElite) {
         confetti({
-          particleCount: reaction < 0.180 ? 350 : 150,
-          spread: reaction < 0.180 ? 120 : 70,
+          particleCount: reaction < 0.180 ? 300 : 150,
+          spread: reaction < 0.180 ? 100 : 70,
           origin: { y: 0.6 },
           colors: ['#ff0033', '#39ff14', '#ffffff', '#fbbf24']
         });
@@ -167,7 +172,7 @@ export function HomePage() {
     if (time < 0.180) return { label: 'GODLIKE REFLEXES', color: 'text-emerald-400' };
     if (time < 0.230) return { label: 'F1 LEVEL', color: 'text-green-400' };
     if (time < 0.300) return { label: 'EXCELLENT', color: 'text-blue-400' };
-    return { label: 'COULD BE BETTER', color: 'text-neutral-600' };
+    return { label: 'KEEP TRAINING', color: 'text-neutral-500' };
   };
   const clearData = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -228,11 +233,6 @@ export function HomePage() {
                   </p>
                 </motion.div>
               )}
-              {gameState === 'WAITING' && (
-                <motion.div key="waiting" className="h-full flex items-center justify-center">
-                   {/* Tension build - silent and still */}
-                </motion.div>
-              )}
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
                 <motion.div
                   key="result"
@@ -241,13 +241,13 @@ export function HomePage() {
                 >
                   <div className="relative inline-block" data-no-trigger="true">
                     <p className={cn(
-                      "text-6xl sm:text-9xl lg:text-[12rem] font-black tabular-nums tracking-tighter leading-none px-2 transition-colors",
+                      "text-6xl sm:text-9xl lg:text-[12rem] font-black tabular-nums tracking-tighter leading-none px-2",
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch' : 'text-accent',
-                      lastReaction !== null && lastReaction < bestTime && gameState === 'RESULT' && "animate-glitch text-amber-400"
+                      isNewRecord && "animate-glitch text-amber-400"
                     )}>
                       {gameState === 'JUMP_START' ? 'JUMP' : `${lastReaction?.toFixed(3)}s`}
                     </p>
-                    {lastReaction !== null && lastReaction > 0 && lastReaction < bestTime && (
+                    {isNewRecord && (
                       <div className="absolute -top-4 -right-2 sm:-top-8 sm:-right-10 bg-amber-500 text-black text-[9px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 font-black uppercase shadow-glow z-20 border-2 border-black transform rotate-12 whitespace-nowrap animate-bounce">
                         NEW BEST
                       </div>
