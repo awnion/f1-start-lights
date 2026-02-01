@@ -8,7 +8,7 @@ interface RetroCardProps {
 export function RetroCard({ children, title, className }: RetroCardProps) {
   return (
     <div className={cn("relative group h-full", className)}>
-      {/* Corner accents - Absolute positioning relative to the outer container */}
+      {/* Corner accents */}
       <div className="absolute -top-[2px] -left-[2px] w-4 h-4 border-t-2 border-l-2 border-primary z-20 pointer-events-none" />
       <div className="absolute -top-[2px] -right-[2px] w-4 h-4 border-t-2 border-r-2 border-primary z-20 pointer-events-none" />
       <div className="absolute -bottom-[2px] -left-[2px] w-4 h-4 border-b-2 border-l-2 border-primary z-20 pointer-events-none" />
@@ -27,8 +27,11 @@ export function RetroCard({ children, title, className }: RetroCardProps) {
         <div className="relative z-10">
           {children}
         </div>
-        {/* Decorative BG pattern */}
-        <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]" />
+        {/* Decorative background pattern - Ensure no technical descriptors in ARIA if needed */}
+        <div 
+          className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]" 
+          aria-hidden="true"
+        />
       </div>
     </div>
   );

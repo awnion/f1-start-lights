@@ -32,7 +32,7 @@ export function HomePage() {
   const processingRef = useRef<boolean>(false);
   const lastActionTimeRef = useRef<number>(0);
   useEffect(() => {
-    document.title = "F1 REFLEX | High-Precision Semaphore";
+    document.title = "F1 REFLEX";
   }, []);
   const [history, setHistory] = useState<Attempt[]>(() => {
     try {
@@ -42,7 +42,7 @@ export function HomePage() {
         return Array.isArray(parsed) ? parsed.slice(0, 20) : [];
       }
     } catch (e) {
-      console.error("Failed to load history:", e);
+      console.error("Failed to load records:", e);
     }
     return [];
   });
@@ -50,7 +50,7 @@ export function HomePage() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
     } catch (e) {
-      console.error("Failed to save history:", e);
+      console.error("Failed to save records:", e);
     }
   }, [history]);
   const clearAllTimers = useCallback(() => {
@@ -162,7 +162,7 @@ export function HomePage() {
   };
   const clearData = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("DANGER: WIPE LOCAL TELEMETRY DATA?")) {
+    if (confirm("DANGER: PERMANENTLY WIPE ALL SESSION RECORDS?")) {
       setHistory([]);
       localStorage.removeItem(STORAGE_KEY);
       resetToIdle();
@@ -189,7 +189,6 @@ export function HomePage() {
             </div>
             <h1 className="text-3xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
           </div>
-          {/* Metadata removed for professional simulator standard */}
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
           <div className="w-full flex justify-center items-start">
@@ -204,7 +203,6 @@ export function HomePage() {
                   className="space-y-4"
                 >
                   <p className="text-neutral-400 font-bold tracking-[0.5em] uppercase text-sm sm:text-xl animate-pulse">Tap Screen to Start</p>
-                  <p className="text-[10px] text-neutral-700 uppercase tracking-widest font-mono">Precision timing protocol engaged</p>
                 </motion.div>
               )}
               {gameState === 'COUNTDOWN' && (
@@ -223,7 +221,7 @@ export function HomePage() {
               )}
               {gameState === 'WAITING' && (
                 <motion.div key="waiting" className="h-full flex items-center justify-center">
-                   {/* Instruction text removed to heighten tension during WAITING state */}
+                   {/* Silent tension */}
                 </motion.div>
               )}
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
@@ -264,7 +262,7 @@ export function HomePage() {
           </div>
         </main>
         <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
-          <RetroCard title="World Class Data">
+          <RetroCard title="Pro Benchmarks">
             <div className="space-y-2">
               {PRO_BENCHMARKS.map((pro, idx) => (
                 <div key={idx} className="flex justify-between items-center text-[11px] font-mono py-1.5 border-b border-neutral-800/30 last:border-0">
@@ -285,7 +283,7 @@ export function HomePage() {
               ))}
             </div>
           </RetroCard>
-          <RetroCard title="Telemetry Summary">
+          <RetroCard title="Personal Performance">
             <div className="space-y-4">
               <div className="flex justify-between items-center bg-neutral-950/80 p-4 border border-neutral-800/50 relative overflow-hidden">
                 <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2 relative z-10">
@@ -313,17 +311,17 @@ export function HomePage() {
                   className="w-full border-neutral-800 bg-neutral-900/50 text-neutral-600 hover:text-red-500 hover:border-red-900/50 transition-all uppercase text-[10px] tracking-[0.2em] h-10 rounded-none font-bold"
                   onClick={clearData}
                 >
-                  Purge Storage
+                  Clear Records
                 </Button>
               </div>
             </div>
           </RetroCard>
-          <RetroCard title="Recent Logs">
+          <RetroCard title="Session History">
             <ScrollArea className="h-44 pr-4">
               <div className="space-y-3">
                 {history.length === 0 ? (
                   <div className="h-32 flex items-center justify-center text-neutral-800 text-[10px] uppercase font-bold tracking-[0.3em]">
-                    No Data Locked
+                    No Session Data
                   </div>
                 ) : (
                   history.map((attempt, idx) => (
