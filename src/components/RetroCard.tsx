@@ -7,28 +7,30 @@ interface RetroCardProps {
 }
 export function RetroCard({ children, title, className }: RetroCardProps) {
   return (
-    <div className={cn("relative group h-full", className)}>
+    <div className={cn("relative group", className)}>
       {/* Corner accents */}
-      <div className="absolute -top-[2px] -left-[2px] w-4 h-4 border-t-2 border-l-2 border-primary z-20 pointer-events-none" />
-      <div className="absolute -top-[2px] -right-[2px] w-4 h-4 border-t-2 border-r-2 border-primary z-20 pointer-events-none" />
-      <div className="absolute -bottom-[2px] -left-[2px] w-4 h-4 border-b-2 border-l-2 border-primary z-20 pointer-events-none" />
-      <div className="absolute -bottom-[2px] -right-[2px] w-4 h-4 border-b-2 border-r-2 border-primary z-20 pointer-events-none" />
-      <div className="bg-neutral-900/90 border border-neutral-800 p-6 sm:p-8 h-full relative overflow-hidden flex flex-col">
+      <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-primary z-20" />
+      <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-primary z-20" />
+      <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-primary z-20" />
+      <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-primary z-20" />
+      <div className="bg-neutral-900/90 border border-neutral-800 p-4 relative overflow-hidden">
         {title && (
-          <div className="mb-6 flex items-center justify-between border-b border-neutral-800/60 pb-5 min-h-[2rem] flex-shrink-0">
-            <h3 className="text-primary font-black tracking-[0.2em] uppercase text-sm sm:text-base leading-none">
+          <div className="mb-4 flex items-center justify-between border-b border-neutral-800 pb-2">
+            <h3 className="text-primary font-bold tracking-tighter uppercase text-sm">
               {title}
             </h3>
+            <div className="flex gap-1">
+              <div className="w-1 h-1 bg-primary/40" />
+              <div className="w-1 h-1 bg-primary/60" />
+              <div className="w-1 h-1 bg-primary" />
+            </div>
           </div>
         )}
-        <div className="relative z-10 flex-1">
+        <div className="relative z-10">
           {children}
         </div>
-        {/* Decorative background pattern */}
-        <div
-          className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px]"
-          aria-hidden="true"
-        />
+        {/* Decorative BG pattern */}
+        <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
       </div>
     </div>
   );
