@@ -7,7 +7,7 @@ import { Semaphore } from '@/components/Semaphore';
 import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-const STORAGE_KEY = 'f1_reflex_history_v2';
+const STORAGE_KEY = 'f1_reflex_history_v3';
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
@@ -26,16 +26,17 @@ export function HomePage() {
   const [activeLights, setActiveLights] = useState(0);
   const [lastReaction, setLastReaction] = useState<number | null>(null);
   const lightsOutTimeRef = useRef<number>(0);
-  const activeTimersRef = useRef<any[]>([]);
+  const activeTimersRef = useRef<number[]>([]);
+  const processingRef = useRef<boolean>(false);
   useEffect(() => {
-    document.title = "F1 REFLEX";
+    document.title = "F1 REFLEX | High-Precision Semaphore";
   }, []);
   const [history, setHistory] = useState<Attempt[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? parsed.slice(0, 15) : [];
+        return Array.isArray(parsed) ? parsed.slice(0, 20) : [];
       }
     } catch (e) {
       console.error("Failed to load history:", e);
@@ -60,86 +61,86 @@ export function HomePage() {
     const validTimes = history.filter(a => a.time > 0).map(a => a.time);
     return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
   }, [history]);
-  const isAchievement = useCallback((time: number) => {
-    if (time <= 0) return false;
-    const isElite = time < 0.200;
-    const isNewPB = history.length === 0 || time < bestTime;
-    return isElite || isNewPB;
-  }, [bestTime, history.length]);
   const startSequence = useCallback(() => {
     clearAllTimers();
+    processingRef.current = false;
     lightsOutTimeRef.current = 0;
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
     // Sequence: 1 light per second
     for (let i = 1; i <= 5; i++) {
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
-    // After 5th light (at 5000ms), wait exactly 1 second (at 6000ms) before starting random hold
-    const prepareTimer = setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200; // 200ms to 3000ms
-      const holdTimer = setTimeout(() => {
+    const prepareTimer = window.setTimeout(() => {
+      const randomHold = Math.random() * 2800 + 200; 
+      const holdTimer = window.setTimeout(() => {
         lightsOutTimeRef.current = performance.now();
         setGameState('WAITING');
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(holdTimer);
-    }, 6000); 
+    }, 6000);
     activeTimersRef.current.push(prepareTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     clearAllTimers();
+    processingRef.current = false;
     lightsOutTimeRef.current = 0;
     setGameState('IDLE');
     setActiveLights(0);
     setLastReaction(null);
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
+    if (processingRef.current) return;
     const now = performance.now();
-    if (gameState === 'IDLE') {
+    if (gameState === 'IDLE' || gameState === 'RESULT' || gameState === 'JUMP_START') {
       startSequence();
       return;
     }
     if (gameState === 'COUNTDOWN') {
+      processingRef.current = true;
       clearAllTimers();
       setGameState('JUMP_START');
       setLastReaction(0);
-      setHistory(prev => [{ id: crypto.randomUUID(), time: 0, timestamp: Date.now() }, ...prev].slice(0, 15));
+      setHistory(prev => [{ id: crypto.randomUUID(), time: 0, timestamp: Date.now() }, ...prev].slice(0, 20));
       return;
     }
     if (gameState === 'WAITING') {
+      processingRef.current = true;
       const reaction = (now - lightsOutTimeRef.current) / 1000;
+      // Determine achievement before updating history
+      const isNewPB = history.length === 0 || (reaction > 0 && reaction < bestTime);
+      const isElite = reaction > 0 && reaction < 0.200;
       setLastReaction(reaction);
       setGameState('RESULT');
-      if (isAchievement(reaction)) {
+      if (isNewPB || isElite) {
         confetti({
-          particleCount: reaction < 0.180 ? 250 : 150,
-          spread: 90,
+          particleCount: reaction < 0.180 ? 300 : 150,
+          spread: reaction < 0.180 ? 100 : 70,
           origin: { y: 0.6 },
           colors: ['#ff0033', '#39ff14', '#ffffff', '#fbbf24']
         });
       }
-      setHistory(prev => [{ id: crypto.randomUUID(), time: reaction, timestamp: Date.now() }, ...prev].slice(0, 15));
+      setHistory(prev => [{ id: crypto.randomUUID(), time: reaction, timestamp: Date.now() }, ...prev].slice(0, 20));
       return;
     }
-  }, [gameState, startSequence, clearAllTimers, isAchievement]);
+  }, [gameState, startSequence, clearAllTimers, history, bestTime]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['IDLE', 'COUNTDOWN', 'WAITING'].includes(gameState)) {
-        if (e.code === 'Space' || e.code === 'Enter') {
-          e.preventDefault();
-          handleTrigger();
-        }
+      // Logic guards for keys
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        handleTrigger();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTrigger, gameState]);
+  }, [handleTrigger]);
   const getPerformanceMessage = (time: number) => {
     if (time === 0) return { label: 'JUMP START', color: 'text-red-500' };
     if (time < 0.180) return { label: 'GODLIKE REFLEXES', color: 'text-emerald-400' };
@@ -149,7 +150,7 @@ export function HomePage() {
   };
   const clearData = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Reset all session data?")) {
+    if (confirm("Clear all race data and reset telemetry?")) {
       setHistory([]);
       localStorage.removeItem(STORAGE_KEY);
       resetToIdle();
@@ -166,18 +167,23 @@ export function HomePage() {
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger]')) return;
-        if (['IDLE', 'COUNTDOWN', 'WAITING'].includes(gameState)) {
-          handleTrigger();
-        }
+        handleTrigger();
       }}
     >
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col flex-1 py-8 md:py-10 lg:py-12">
-        <header className="flex items-center justify-center mb-0 border-b border-neutral-800 pb-8">
-          <div className="flex items-center gap-6">
+        <header className="flex items-center justify-between mb-8 border-b border-neutral-800 pb-8">
+          <div className="flex items-center gap-4 sm:gap-6">
             <div className="bg-primary p-2 glow-red transform -skew-x-12">
-              <Cpu className="w-8 h-8 sm:w-10 sm:h-10 text-white transform skew-x-12" />
+              <Cpu className="w-6 h-6 sm:w-10 sm:h-10 text-white transform skew-x-12" />
             </div>
-            <h1 className="text-3xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
+            <h1 className="text-2xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
+          </div>
+          <div className="hidden sm:flex flex-col items-end gap-1">
+             <div className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Protocol Status</div>
+             <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                <span className="text-xs text-accent font-mono">LINK_ACTIVE</span>
+             </div>
           </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
@@ -189,11 +195,11 @@ export function HomePage() {
               {gameState === 'IDLE' && (
                 <motion.div
                   key="idle"
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
                   className="space-y-4"
                 >
                   <p className="text-neutral-400 font-bold tracking-[0.5em] uppercase text-xs sm:text-xl animate-pulse">Tap Screen or Press Space</p>
-                  <p className="text-[10px] text-neutral-600 uppercase tracking-widest font-mono">Precision input required</p>
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-widest font-mono">Zero Latency Tracking Engaged</p>
                 </motion.div>
               )}
               {gameState === 'COUNTDOWN' && (
@@ -203,10 +209,20 @@ export function HomePage() {
                   className="flex flex-col items-center"
                 >
                   <p className="text-neutral-500 font-black text-xl sm:text-4xl tracking-[0.6em] uppercase">STAND BY</p>
+                  <div className="mt-4 w-32 h-1 bg-neutral-900 overflow-hidden relative">
+                    <motion.div 
+                       className="absolute inset-0 bg-primary"
+                       initial={{ width: "0%" }}
+                       animate={{ width: "100%" }}
+                       transition={{ duration: 5, ease: "linear" }}
+                    />
+                  </div>
                 </motion.div>
               )}
               {gameState === 'WAITING' && (
-                <motion.div key="waiting" className="h-full" />
+                <motion.div key="waiting" className="h-full flex items-center justify-center">
+                   <p className="text-white font-black text-2xl sm:text-5xl tracking-[0.8em] uppercase animate-glitch">WATCH</p>
+                </motion.div>
               )}
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
                 <motion.div
@@ -216,15 +232,15 @@ export function HomePage() {
                 >
                   <div className="relative inline-block">
                     <p className={cn(
-                      "text-6xl sm:text-9xl lg:text-[12rem] font-black tabular-nums tracking-tighter leading-none px-2",
+                      "text-6xl sm:text-9xl lg:text-[12rem] font-black tabular-nums tracking-tighter leading-none px-2 transition-colors",
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch' : 'text-accent',
-                      lastReaction !== null && isAchievement(lastReaction) && gameState === 'RESULT' && "animate-glitch"
+                      lastReaction !== null && lastReaction < bestTime && gameState === 'RESULT' && "animate-glitch text-amber-400"
                     )}>
                       {gameState === 'JUMP_START' ? 'JUMP' : `${lastReaction?.toFixed(3)}s`}
                     </p>
-                    {lastReaction !== null && isAchievement(lastReaction) && gameState === 'RESULT' && (
-                      <div className="absolute -top-4 -right-2 sm:-top-8 sm:-right-10 bg-amber-500 text-black text-[9px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 font-black uppercase shadow-glow z-20 border-2 border-black transform rotate-12 whitespace-nowrap">
-                        NEW RECORD
+                    {lastReaction !== null && lastReaction > 0 && lastReaction < bestTime && (
+                      <div className="absolute -top-4 -right-2 sm:-top-8 sm:-right-10 bg-amber-500 text-black text-[9px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 font-black uppercase shadow-glow z-20 border-2 border-black transform rotate-12 whitespace-nowrap animate-bounce">
+                        NEW BEST
                       </div>
                     )}
                   </div>
@@ -235,6 +251,7 @@ export function HomePage() {
                     <Button
                       onClick={resetToIdle}
                       className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.3em] px-6 sm:px-14 py-4 sm:py-6 rounded-none glow-red h-auto text-sm sm:text-2xl group w-full sm:w-auto"
+                      data-no-trigger="true"
                     >
                       <RotateCcw className="w-5 h-5 sm:w-8 sm:h-8 mr-2 sm:mr-4 group-hover:rotate-180 transition-transform duration-500" />
                       Restart
@@ -271,12 +288,15 @@ export function HomePage() {
           </RetroCard>
           <RetroCard title="Session Analytics">
             <div className="space-y-4">
-              <div className="flex justify-between items-center bg-neutral-950/50 p-4 border border-neutral-800/50">
-                <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2">
+              <div className="flex justify-between items-center bg-neutral-950/50 p-4 border border-neutral-800/50 relative overflow-hidden">
+                {bestTime !== Infinity && bestTime < 0.200 && (
+                   <div className="absolute inset-0 bg-accent/5 animate-pulse pointer-events-none" />
+                )}
+                <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2 relative z-10">
                   <Star className="w-3 h-3 text-amber-500" /> Best
                 </span>
                 <span className={cn(
-                  "font-mono text-xl font-black tracking-tight",
+                  "font-mono text-xl font-black tracking-tight relative z-10",
                   bestTime === Infinity ? "text-neutral-800" : (bestTime <= 0.220 ? "text-accent" : "text-white")
                 )}>
                   {bestTime === Infinity ? '--.---' : `${bestTime.toFixed(3)}s`}
@@ -297,7 +317,7 @@ export function HomePage() {
                   className="w-full border-neutral-800 bg-neutral-900/50 text-neutral-600 hover:text-red-500 hover:border-red-900/50 transition-all uppercase text-[10px] tracking-[0.2em] h-10 rounded-none"
                   onClick={clearData}
                 >
-                  Purge Buffer
+                  Purge Memory
                 </Button>
               </div>
             </div>
@@ -307,7 +327,7 @@ export function HomePage() {
               <div className="space-y-3">
                 {history.length === 0 ? (
                   <div className="h-32 flex items-center justify-center text-neutral-700 text-[10px] uppercase font-bold tracking-widest">
-                    Wait for signal...
+                    Awaiting Signal...
                   </div>
                 ) : (
                   history.map((attempt, idx) => (
@@ -322,7 +342,7 @@ export function HomePage() {
                         ) : (
                           <span className={cn(
                             "flex items-center gap-1 font-bold",
-                            attempt.time <= bestTime && history.length > 1 ? "text-accent" : "text-neutral-400"
+                            attempt.time <= bestTime && history.length > 1 && attempt.time > 0 ? "text-accent" : "text-neutral-400"
                           )}>
                             {attempt.time.toFixed(3)}s
                           </span>
@@ -339,6 +359,8 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
+      {/* Decorative CRT scanline effect layer */}
+      <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
     </div>
   );
 }

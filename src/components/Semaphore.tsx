@@ -18,6 +18,7 @@ export function Semaphore({ lightsActive }: SemaphoreProps) {
                   ? "bg-red-600 glow-red border-red-400 border-2"
                   : "bg-neutral-900 border-neutral-800 border-2 shadow-none"
               )}
+              style={{ transitionProperty: 'background-color, box-shadow' }}
             />
             {/* Bottom Light */}
             <div
@@ -27,6 +28,7 @@ export function Semaphore({ lightsActive }: SemaphoreProps) {
                   ? "bg-red-600 glow-red border-red-400 border-2"
                   : "bg-neutral-900 border-neutral-800 border-2 shadow-none"
               )}
+              style={{ transitionProperty: 'background-color, box-shadow' }}
             />
           </div>
           {/* Connector Rod Base */}
