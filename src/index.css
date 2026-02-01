@@ -23,31 +23,26 @@
   }
   body {
     @apply bg-background text-foreground font-mono overflow-x-hidden;
-    /* Clean background to prevent layering artifacts with the dedicated overlay */
     background-color: #0a0a0a;
   }
 }
 @layer utilities {
   .glow-red {
-    box-shadow: 0 0 15px #ff0033, 0 0 30px #ff0033;
+    box-shadow: 0 0 20px #ff0033, 0 0 40px rgba(255, 0, 51, 0.4);
   }
   .glow-green {
-    box-shadow: 0 0 15px #39ff14, 0 0 30px #39ff14;
-  }
-  .scanline {
-    position: relative;
-    overflow: hidden;
+    text-shadow: 0 0 15px #39ff14, 0 0 30px rgba(57, 255, 20, 0.6);
   }
   @keyframes glitch {
     0% { transform: translate(0); }
-    20% { transform: translate(-2px, 2px); }
-    40% { transform: translate(-2px, -2px); }
-    60% { transform: translate(2px, 2px); }
-    80% { transform: translate(2px, -2px); }
+    20% { transform: translate(-3px, 3px); }
+    40% { transform: translate(-3px, -3px); }
+    60% { transform: translate(3px, 3px); }
+    80% { transform: translate(3px, -3px); }
     100% { transform: translate(0); }
   }
   .animate-glitch {
-    animation: glitch 0.2s cubic-bezier(.25,.46,.45,.94) both infinite;
+    animation: glitch 0.15s cubic-bezier(.25,.46,.45,.94) both infinite;
     text-shadow: 2px 0 #ff0033, -2px 0 #39ff14;
   }
 }

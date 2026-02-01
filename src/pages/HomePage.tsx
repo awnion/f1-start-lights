@@ -7,8 +7,8 @@ import { Semaphore } from '@/components/Semaphore';
 import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
 const STORAGE_KEY = 'f1_start_lights_v1';
-const INPUT_DEBOUNCE_MS = 150;
-const RESULT_COOLDOWN_MS = 600;
+const INPUT_DEBOUNCE_MS = 100;
+const RESULT_COOLDOWN_MS = 500;
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
@@ -115,6 +115,7 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
+    // Immediate lock check and update to prevent re-entrant calls
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     if (processingRef.current) return;
     if (gameState === 'IDLE') {
@@ -144,24 +145,25 @@ export function HomePage() {
       lastActionTimeRef.current = now;
       processingRef.current = true;
       const reaction = (now - lightsOutTimeRef.current) / 1000;
-      const currentPB = bestTime;
-      const isPB = reaction > 0 && reaction < currentPB;
+      // Achievement logic: first valid run OR beating current best
+      const isPB = reaction > 0 && reaction < bestTime;
       const isElite = reaction > 0 && reaction < 0.200;
       setLastReaction(reaction);
-      setIsNewRecord(isPB && history.some(h => h.time > 0));
+      setIsNewRecord(isPB);
       setGameState('RESULT');
       if (isPB || isElite) {
         confetti({
-          particleCount: reaction < 0.180 ? 300 : 150,
-          spread: reaction < 0.180 ? 100 : 70,
+          particleCount: reaction < 0.180 ? 400 : 200,
+          spread: reaction < 0.180 ? 120 : 80,
           origin: { y: 0.6 },
-          colors: ['#ff0033', '#39ff14', '#ffffff', '#fbbf24']
+          colors: ['#ff0033', '#39ff14', '#ffffff', '#fbbf24'],
+          gravity: 1.2
         });
       }
       setHistory(prev => [{ id: crypto.randomUUID(), time: reaction, timestamp: Date.now() }, ...prev].slice(0, 50));
       return;
     }
-  }, [gameState, startSequence, clearAllTimers, history, bestTime]);
+  }, [gameState, startSequence, clearAllTimers, bestTime]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.repeat) return;
@@ -182,7 +184,7 @@ export function HomePage() {
   };
   return (
     <div
-      className="min-h-screen bg-neutral-950 flex flex-col items-center touch-none select-none relative"
+      className="min-h-screen bg-neutral-950 flex flex-col items-center touch-none select-none relative overflow-x-hidden"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger="true"]')) return;
@@ -239,9 +241,9 @@ export function HomePage() {
                 >
                   <div className="relative inline-block" data-no-trigger="true">
                     <p className={cn(
-                      "text-4xl sm:text-7xl lg:text-8xl font-black tabular-nums tracking-tighter leading-none px-2 uppercase",
-                      gameState === 'JUMP_START' ? 'text-red-500 animate-glitch whitespace-nowrap' : 'text-accent',
-                      isNewRecord && "animate-glitch text-amber-400"
+                      "text-4xl sm:text-7xl lg:text-8xl font-black tabular-nums tracking-tighter leading-none px-4 uppercase",
+                      gameState === 'JUMP_START' ? 'text-red-500 animate-glitch whitespace-nowrap' : 'text-accent glow-green',
+                      isNewRecord && "animate-glitch text-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.5)]"
                     )}>
                       {gameState === 'JUMP_START'
                         ? 'JUMP START'
@@ -249,23 +251,23 @@ export function HomePage() {
                       }
                     </p>
                     {isNewRecord && (
-                      <div className="absolute -top-3 -right-2 sm:-top-5 sm:-right-6 bg-amber-500 text-black text-[7px] sm:text-[9px] px-1.5 sm:px-2 py-0.5 sm:py-1 font-black uppercase shadow-glow z-20 border-2 border-black transform rotate-12 whitespace-nowrap animate-bounce">
+                      <div className="absolute -top-3 -right-2 sm:-top-5 sm:-right-8 bg-amber-500 text-black text-[8px] sm:text-[10px] px-2 sm:px-3 py-1 sm:py-1.5 font-black uppercase shadow-glow z-20 border-2 border-black transform rotate-12 whitespace-nowrap animate-bounce">
                         NEW BEST
                       </div>
                     )}
                   </div>
                   <div className="flex flex-col items-center gap-3 sm:gap-5 w-full px-4" data-no-trigger="true">
                     {gameState !== 'JUMP_START' && (
-                      <p className={cn("text-sm sm:text-xl font-black uppercase tracking-[0.25em] sm:tracking-[0.4em] text-center", getPerformanceMessage(lastReaction ?? 0).color)}>
+                      <p className={cn("text-sm sm:text-2xl font-black uppercase tracking-[0.25em] sm:tracking-[0.5em] text-center italic", getPerformanceMessage(lastReaction ?? 0).color)}>
                         {getPerformanceMessage(lastReaction ?? 0).label}
                       </p>
                     )}
                     <Button
                       onClick={resetToIdle}
-                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.3em] px-6 sm:px-10 py-3 sm:py-4 rounded-none glow-red h-auto text-xs sm:text-lg group w-full sm:w-auto mt-2"
+                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.3em] px-8 sm:px-12 py-4 sm:py-6 rounded-none glow-red h-auto text-sm sm:text-xl group w-full sm:w-auto mt-4 transition-all duration-300 active:scale-95"
                     >
-                      <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 group-hover:rotate-180 transition-transform duration-500" />
-                      Restart
+                      <RotateCcw className="w-4 h-4 sm:w-6 sm:h-6 mr-3 sm:mr-4 group-hover:rotate-180 transition-transform duration-700" />
+                      Try Again
                     </Button>
                   </div>
                 </motion.div>
@@ -273,64 +275,64 @@ export function HomePage() {
             </AnimatePresence>
           </div>
         </main>
-        <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-2 gap-6" data-no-trigger="true">
-          <RetroCard title="F1 Drivers Benchmarks">
-            <div className="space-y-3">
+        <div className="mt-8 sm:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8" data-no-trigger="true">
+          <RetroCard title="F1 Driver Benchmarks">
+            <div className="space-y-4">
               {PRO_BENCHMARKS.map((pro, idx) => (
-                <div key={idx} className="flex justify-between items-center py-3 border-b border-neutral-800/30 last:border-0">
+                <div key={idx} className="flex justify-between items-center py-3 border-b border-neutral-800/40 last:border-0 group">
                   <div className="flex flex-col">
-                    <span className="text-neutral-200 font-bold uppercase text-base">{pro.name}</span>
-                    <span className="text-[10px] text-neutral-600 uppercase tracking-tighter">{pro.label}</span>
+                    <span className="text-neutral-200 font-bold uppercase text-base group-hover:text-primary transition-colors">{pro.name}</span>
+                    <span className="text-[10px] text-neutral-600 uppercase tracking-widest">{pro.label}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <span className={cn(
-                      "font-black tabular-nums font-mono text-base",
+                      "font-black tabular-nums font-mono text-lg",
                       bestTime <= pro.time ? "text-accent" : "text-neutral-600"
                     )}>
                       {pro.time.toFixed(3)}s
                     </span>
-                    {bestTime <= pro.time && <Zap className="w-3 h-3 text-amber-500" />}
+                    {bestTime <= pro.time && <Zap className="w-4 h-4 text-amber-500 animate-pulse" />}
                   </div>
                 </div>
               ))}
             </div>
           </RetroCard>
-          <RetroCard title="Personal Leaderboard (Top 5)">
+          <RetroCard title="Personal Top 5">
             <div className="space-y-4">
               {topTimes.length === 0 ? (
-                <div className="h-48 flex flex-col items-center justify-center text-neutral-800 gap-3">
-                  <Trophy className="w-10 h-10 opacity-20" />
-                  <p className="text-xs uppercase font-bold tracking-[0.3em]">No data recorded</p>
+                <div className="h-48 flex flex-col items-center justify-center text-neutral-800 gap-4">
+                  <Trophy className="w-12 h-12 opacity-20" />
+                  <p className="text-xs uppercase font-bold tracking-[0.4em] opacity-40">Awaiting your first run</p>
                 </div>
               ) : (
                 topTimes.map((attempt, idx) => {
                   const perf = getPerformanceMessage(attempt.time);
                   return (
-                    <div key={attempt.id} className="flex items-center justify-between font-mono border-b border-neutral-800/30 pb-5 last:border-0">
+                    <div key={attempt.id} className="flex items-center justify-between font-mono border-b border-neutral-800/40 pb-5 last:border-0 group">
                       <div className="flex items-center gap-4">
                         <span className={cn(
-                          "text-xl font-black italic w-8",
-                          idx === 0 ? "text-amber-500" : "text-neutral-700"
+                          "text-2xl font-black italic w-10 text-center",
+                          idx === 0 ? "text-amber-500" : "text-neutral-800 group-hover:text-neutral-600 transition-colors"
                         )}>
                           #{idx + 1}
                         </span>
                         <div className="flex flex-col">
-                          <span className={cn("font-bold text-sm uppercase tracking-widest", perf.color)}>
+                          <span className={cn("font-black text-sm uppercase tracking-widest", perf.color)}>
                             {perf.label}
                           </span>
-                          <span className="text-[10px] text-neutral-600 uppercase">
+                          <span className="text-[10px] text-neutral-600 uppercase font-bold">
                             {new Date(attempt.timestamp).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <span className={cn(
-                          "font-black tabular-nums text-xl",
+                          "font-black tabular-nums text-2xl tracking-tighter",
                           idx === 0 ? "text-accent" : "text-white"
                         )}>
                           {attempt.time.toFixed(3)}s
                         </span>
-                        {idx === 0 && <Star className="w-5 h-5 text-amber-500 fill-amber-500" />}
+                        {idx === 0 && <Star className="w-6 h-6 text-amber-500 fill-amber-500 shadow-glow" />}
                       </div>
                     </div>
                   );
@@ -341,8 +343,8 @@ export function HomePage() {
         </div>
       </div>
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.2),rgba(0,255,0,0.1),rgba(0,0,255,0.2))] bg-[length:100%_4px,3px_100%]" />
-        <div className="absolute inset-0 opacity-[0.01] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
+        <div className="absolute inset-0 opacity-[0.05] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.1),rgba(0,255,0,0.05),rgba(0,0,255,0.1))] bg-[length:100%_3px,2px_100%]" />
+        <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
       </div>
     </div>
   );
