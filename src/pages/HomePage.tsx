@@ -28,7 +28,7 @@ export function HomePage() {
   const lightsOutTimeRef = useRef<number>(0);
   const activeTimersRef = useRef<NodeJS.Timeout[]>([]);
   useEffect(() => {
-    document.title = "F1 REFLEX | Professional Benchmarks";
+    document.title = "F1 REFLEX | Pro Timing Engine";
   }, []);
   const [history, setHistory] = useState<Attempt[]>(() => {
     try {
@@ -61,31 +61,37 @@ export function HomePage() {
     return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
   }, [history]);
   const isNewBest = useMemo(() => {
-    return lastReaction !== null && lastReaction > 0 && lastReaction <= bestTime && history.length > 1;
+    // If it's the first attempt, it's technically a "best", 
+    // but we usually want to celebrate if it's elite or beats a previous record.
+    if (lastReaction === null || lastReaction <= 0) return false;
+    if (history.length <= 1) return lastReaction <= 0.220; // Celebrate first time if pro-level
+    return lastReaction <= bestTime;
   }, [lastReaction, bestTime, history.length]);
   const startSequence = useCallback(() => {
     clearAllTimers();
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
-    // Sequence for 5 red light pairs
+    // Sequence for 5 red light pairs: 1s, 2s, 3s, 4s, 5s
     for (let i = 1; i <= 5; i++) {
       const timer = setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
-    // Final random wait logic
-    const finalStepTimer = setTimeout(() => {
-      const randomHold = Math.random() * 2600 + 400;
+    // After the 5th light (at 5000ms), wait exactly 1 second (to 6000ms) 
+    // before starting the randomized hold period (0.2s - 3.0s)
+    const prepareTimer = setTimeout(() => {
+      // Randomized hold period according to F1 simulator specs
+      const randomHold = Math.random() * 2800 + 200; // 0.2s to 3.0s
       const holdTimer = setTimeout(() => {
         lightsOutTimeRef.current = performance.now();
         setGameState('WAITING');
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(holdTimer);
-    }, 5000);
-    activeTimersRef.current.push(finalStepTimer);
+    }, 6000); // 5s (last light) + 1s (cadence)
+    activeTimersRef.current.push(prepareTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -111,11 +117,11 @@ export function HomePage() {
       const reaction = (now - lightsOutTimeRef.current) / 1000;
       setLastReaction(reaction);
       setGameState('RESULT');
-      const isRecord = reaction <= bestTime || reaction < 0.200;
+      const isRecord = (reaction <= bestTime && history.length > 0) || reaction < 0.200;
       if (isRecord) {
         confetti({
-          particleCount: reaction < 0.200 ? 150 : 80,
-          spread: 70,
+          particleCount: reaction < 0.180 ? 200 : 100,
+          spread: 80,
           origin: { y: 0.6 },
           colors: ['#ff0033', '#39ff14', '#ffffff']
         });
@@ -123,11 +129,12 @@ export function HomePage() {
       setHistory(prev => [{ id: crypto.randomUUID(), time: reaction, timestamp: Date.now() }, ...prev].slice(0, 15));
       return;
     }
-  }, [gameState, startSequence, clearAllTimers, bestTime]);
+  }, [gameState, startSequence, clearAllTimers, bestTime, history.length]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.code === 'Enter') {
-        if (gameState !== 'RESULT' && gameState !== 'JUMP_START') {
+      // Only handle interaction keys if NOT in a terminal state (where only Reset button works)
+      if (gameState === 'IDLE' || gameState === 'COUNTDOWN' || gameState === 'WAITING') {
+        if (e.code === 'Space' || e.code === 'Enter') {
           e.preventDefault();
           handleTrigger();
         }
@@ -151,14 +158,22 @@ export function HomePage() {
       resetToIdle();
     }
   };
+  const validAverage = useMemo(() => {
+    const valid = history.filter(a => a.time > 0);
+    if (valid.length === 0) return 0;
+    return valid.reduce((acc, curr) => acc + curr.time, 0) / valid.length;
+  }, [history]);
   return (
     <div
       className="min-h-screen bg-neutral-950 flex flex-col items-center scanline touch-none overflow-hidden select-none"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
+        // Prevent trigger if clicking UI buttons
         if (target.closest('button') || target.closest('a')) return;
-        if (gameState === 'RESULT' || gameState === 'JUMP_START') return;
-        handleTrigger();
+        // Only trigger during active game phases
+        if (gameState === 'IDLE' || gameState === 'COUNTDOWN' || gameState === 'WAITING') {
+          handleTrigger();
+        }
       }}
     >
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col flex-1 py-8 md:py-10 lg:py-12">
@@ -171,6 +186,10 @@ export function HomePage() {
               <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
               <span className="text-[10px] text-primary/80 font-bold uppercase tracking-[0.3em] mt-1 ml-1">Professional Benchmark Edition</span>
             </div>
+          </div>
+          <div className="hidden sm:flex flex-col items-end">
+            <span className="text-[10px] text-neutral-500 uppercase font-bold">Latency Mode</span>
+            <span className="text-[10px] text-accent font-black uppercase tracking-widest">Ultra-Low Performance.now()</span>
           </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-center gap-12 sm:gap-16">
@@ -216,7 +235,7 @@ export function HomePage() {
                       {gameState === 'JUMP_START' ? 'JUMP' : `${lastReaction?.toFixed(3)}s`}
                     </p>
                     {isNewBest && gameState === 'RESULT' && (
-                      <div className="absolute -top-6 -right-12 bg-amber-500 text-black text-[10px] px-2 py-1 font-black uppercase shadow-glow z-20 border border-black">
+                      <div className="absolute -top-6 -right-12 bg-amber-500 text-black text-[10px] px-2 py-1 font-black uppercase shadow-glow z-20 border border-black transform rotate-12">
                         NEW BEST
                       </div>
                     )}
@@ -257,9 +276,7 @@ export function HomePage() {
                   <Timer className="w-3 h-3 text-blue-500" /> Valid Average
                 </span>
                 <span className="text-white font-mono font-bold text-sm">
-                  {history.length > 0 && history.some(a => a.time > 0)
-                    ? (history.filter(a => a.time > 0).reduce((acc, curr) => acc + curr.time, 0) / history.filter(a => a.time > 0).length).toFixed(3)
-                    : '0.000'}s
+                  {validAverage > 0 ? validAverage.toFixed(3) : '0.000'}s
                 </span>
               </div>
               <div className="pt-2">
