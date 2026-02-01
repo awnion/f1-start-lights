@@ -4,9 +4,8 @@ interface RetroCardProps {
   children: React.ReactNode;
   title?: string;
   className?: string;
-  isSyncing?: boolean;
 }
-export function RetroCard({ children, title, className, isSyncing }: RetroCardProps) {
+export function RetroCard({ children, title, className }: RetroCardProps) {
   return (
     <div className={cn("relative group", className)}>
       {/* Corner accents */}
@@ -21,17 +20,6 @@ export function RetroCard({ children, title, className, isSyncing }: RetroCardPr
               <h3 className="text-primary font-bold tracking-tighter uppercase text-sm">
                 {title}
               </h3>
-              {isSyncing && (
-                <div className="flex gap-0.5 items-center">
-                  <div className="w-1 h-1 bg-amber-500 animate-pulse" />
-                  <span className="text-[8px] text-amber-500 font-black tracking-tighter">SYNCING</span>
-                </div>
-              )}
-            </div>
-            <div className="flex gap-1">
-              <div className="w-1 h-1 bg-primary/40" />
-              <div className="w-1 h-1 bg-primary/60" />
-              <div className="w-1 h-1 bg-primary" />
             </div>
           </div>
         )}
