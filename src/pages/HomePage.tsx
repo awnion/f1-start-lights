@@ -195,7 +195,7 @@ export function HomePage() {
           </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
-          <div className="w-full">
+          <div className="w-full flex justify-center items-end">
             <Semaphore lightsActive={activeLights} />
           </div>
           <div className="text-center h-48 sm:h-64 flex flex-col items-center justify-center w-full">
