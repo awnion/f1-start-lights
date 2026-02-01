@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Timer, Trophy, RotateCcw, Zap, Cpu, Star } from 'lucide-react';
+import { RotateCcw, Zap, Cpu, Trophy, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { cn } from '@/lib/utils';
@@ -67,6 +67,13 @@ export function HomePage() {
     const validTimes = history.filter(a => a.time > 0).map(a => a.time);
     return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
   }, [history]);
+  // Derived Top 5 Leaderboard
+  const topTimes = useMemo(() => {
+    return history
+      .filter(a => a.time > 0)
+      .sort((a, b) => a.time - b.time)
+      .slice(0, 5);
+  }, [history]);
   const startSequence = useCallback(() => {
     clearAllTimers();
     processingRef.current = false;
@@ -76,16 +83,14 @@ export function HomePage() {
     setActiveLights(0);
     setLastReaction(null);
     setIsNewRecord(false);
-    // Sequence lighting: 1 row of lights on the gantry illuminates at 1s intervals
     for (let i = 1; i <= 5; i++) {
       const timer = window.setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
-    // Professional standard: Random hold starts immediately after the 5th light (5000ms mark)
     const holdTriggerTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200; // 0.2s to 3s hold
+      const randomHold = Math.random() * 2800 + 200;
       expectedLightsOutRef.current = performance.now() + randomHold;
       const goTimer = window.setTimeout(() => {
         const now = performance.now();
@@ -94,7 +99,7 @@ export function HomePage() {
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(goTimer);
-    }, 5000); // Optimized from 6000ms to 5000ms for tighter cadence
+    }, 5000);
     activeTimersRef.current.push(holdTriggerTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent | React.PointerEvent) => {
@@ -105,7 +110,7 @@ export function HomePage() {
     clearAllTimers();
     processingRef.current = false;
     lightsOutTimeRef.current = 0;
-    expectedLightsOutRef.current = 0; // Harden reset state
+    expectedLightsOutRef.current = 0;
     setGameState('IDLE');
     setActiveLights(0);
     setLastReaction(null);
@@ -113,7 +118,6 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
-    // Prevent double triggers/ghost inputs
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     if (processingRef.current) return;
     if (gameState === 'IDLE') {
@@ -147,7 +151,7 @@ export function HomePage() {
       const isPB = reaction > 0 && reaction < currentPB;
       const isElite = reaction > 0 && reaction < 0.200;
       setLastReaction(reaction);
-      setIsNewRecord(isPB && history.length > 0);
+      setIsNewRecord(isPB && history.some(h => h.time > 0));
       setGameState('RESULT');
       if (isPB || isElite) {
         confetti({
@@ -179,18 +183,6 @@ export function HomePage() {
     if (time < 0.300) return { label: 'EXCELLENT', color: 'text-blue-400' };
     return { label: 'KEEP TRAINING', color: 'text-neutral-500' };
   };
-  const clearData = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm("ARE YOU SURE? This will permanently wipe all session records.")) {
-      setHistory([]);
-      localStorage.removeItem(STORAGE_KEY);
-      resetToIdle();
-    }
-  };
-  const validAverage = useMemo(() => {
-    const valid = history.filter(a => a.time > 0);
-    return valid.length === 0 ? 0 : valid.reduce((acc, curr) => acc + curr.time, 0) / valid.length;
-  }, [history]);
   return (
     <div
       className="min-h-screen bg-neutral-950 flex flex-col items-center touch-none select-none relative"
@@ -291,8 +283,8 @@ export function HomePage() {
             </AnimatePresence>
           </div>
         </main>
-        <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
-          <RetroCard title="F1 Benchmarks">
+        <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-2 gap-6" data-no-trigger="true">
+          <RetroCard title="F1 Drivers Benchmarks">
             <div className="space-y-2">
               {PRO_BENCHMARKS.map((pro, idx) => (
                 <div key={idx} className="flex justify-between items-center py-2 border-b border-neutral-800/30 last:border-0">
@@ -313,64 +305,47 @@ export function HomePage() {
               ))}
             </div>
           </RetroCard>
-          <RetroCard title="Session Statistics">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center bg-neutral-950/80 p-5 border border-neutral-800/50 relative overflow-hidden">
-                <span className="text-neutral-500 text-xs uppercase flex items-center gap-2 relative z-10">
-                  <Star className="w-3 h-3 text-amber-500" /> PB
-                </span>
-                <span className={cn(
-                  "font-mono text-xl font-black tracking-tight relative z-10",
-                  bestTime === Infinity ? "text-neutral-800" : (bestTime <= 0.220 ? "text-accent" : "text-white")
-                )}>
-                  {bestTime === Infinity ? '--.---' : `${bestTime.toFixed(3)}s`}
-                </span>
-              </div>
-              <div className="flex justify-between items-center px-4">
-                <span className="text-neutral-500 text-xs uppercase flex items-center gap-2">
-                  <Timer className="w-3 h-3 text-blue-500" /> Avg
-                </span>
-                <span className="text-white font-mono font-bold text-sm">
-                  {validAverage > 0 ? validAverage.toFixed(3) : '0.000'}s
-                </span>
-              </div>
-              <div className="pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-neutral-800 bg-neutral-900/50 text-neutral-600 hover:text-red-500 hover:border-red-900/50 transition-all uppercase text-[10px] tracking-[0.2em] h-10 rounded-none font-bold"
-                  onClick={clearData}
-                >
-                  Clear Session
-                </Button>
-              </div>
-            </div>
-          </RetroCard>
-          <RetroCard title="Race History">
-            <ScrollArea className="h-48 pr-4">
-              <div className="space-y-3">
-                {history.length === 0 ? (
-                  <div className="h-32 flex items-center justify-center text-neutral-800 text-xs uppercase font-bold tracking-[0.3em]">
-                    Standby
+          <RetroCard title="Personal Leaderboard (Top 5)">
+            <ScrollArea className="h-[260px] pr-4">
+              <div className="space-y-4">
+                {topTimes.length === 0 ? (
+                  <div className="h-40 flex flex-col items-center justify-center text-neutral-800 gap-3">
+                    <Trophy className="w-8 h-8 opacity-20" />
+                    <p className="text-xs uppercase font-bold tracking-[0.3em]">No data recorded</p>
                   </div>
                 ) : (
-                  history.map((attempt, idx) => (
-                    <div key={attempt.id} className="flex items-center justify-between font-mono border-b border-neutral-800/20 pb-3 last:border-0">
-                      <div className="flex items-center gap-4">
-                        <span className="text-neutral-700 w-6 text-sm">#{history.length - idx}</span>
-                        {attempt.time <= 0 ? (
-                          <span className="text-red-500 font-black italic uppercase text-sm">Jump</span>
-                        ) : (
-                          <span className={cn("font-bold text-sm", attempt.time <= bestTime && history.length > 1 ? "text-accent" : "text-neutral-400")}>
+                  topTimes.map((attempt, idx) => {
+                    const perf = getPerformanceMessage(attempt.time);
+                    return (
+                      <div key={attempt.id} className="flex items-center justify-between font-mono border-b border-neutral-800/30 pb-4 last:border-0">
+                        <div className="flex items-center gap-3">
+                          <span className={cn(
+                            "text-lg font-black italic w-8",
+                            idx === 0 ? "text-amber-500" : "text-neutral-700"
+                          )}>
+                            #{idx + 1}
+                          </span>
+                          <div className="flex flex-col">
+                            <span className={cn("font-bold text-xs uppercase tracking-widest", perf.color)}>
+                              {perf.label}
+                            </span>
+                            <span className="text-[10px] text-neutral-600 uppercase">
+                              {new Date(attempt.timestamp).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "font-black tabular-nums text-lg",
+                            idx === 0 ? "text-accent" : "text-white"
+                          )}>
                             {attempt.time.toFixed(3)}s
                           </span>
-                        )}
+                          {idx === 0 && <Star className="w-4 h-4 text-amber-500 fill-amber-500" />}
+                        </div>
                       </div>
-                      <span className="text-neutral-800 text-xs">
-                        {new Date(attempt.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                      </span>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>
