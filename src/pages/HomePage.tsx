@@ -61,10 +61,8 @@ export function HomePage() {
     return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
   }, [history]);
   const isNewBest = useMemo(() => {
-    // If it's the first attempt, it's technically a "best", 
-    // but we usually want to celebrate if it's elite or beats a previous record.
     if (lastReaction === null || lastReaction <= 0) return false;
-    if (history.length <= 1) return lastReaction <= 0.220; // Celebrate first time if pro-level
+    if (history.length <= 1) return lastReaction <= 0.220;
     return lastReaction <= bestTime;
   }, [lastReaction, bestTime, history.length]);
   const startSequence = useCallback(() => {
@@ -72,25 +70,21 @@ export function HomePage() {
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
-    // Sequence for 5 red light pairs: 1s, 2s, 3s, 4s, 5s
     for (let i = 1; i <= 5; i++) {
       const timer = setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
-    // After the 5th light (at 5000ms), wait exactly 1 second (to 6000ms) 
-    // before starting the randomized hold period (0.2s - 3.0s)
     const prepareTimer = setTimeout(() => {
-      // Randomized hold period according to F1 simulator specs
-      const randomHold = Math.random() * 2800 + 200; // 0.2s to 3.0s
+      const randomHold = Math.random() * 2800 + 200;
       const holdTimer = setTimeout(() => {
         lightsOutTimeRef.current = performance.now();
         setGameState('WAITING');
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(holdTimer);
-    }, 6000); // 5s (last light) + 1s (cadence)
+    }, 6000);
     activeTimersRef.current.push(prepareTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent) => {
@@ -132,7 +126,6 @@ export function HomePage() {
   }, [gameState, startSequence, clearAllTimers, bestTime, history.length]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle interaction keys if NOT in a terminal state (where only Reset button works)
       if (gameState === 'IDLE' || gameState === 'COUNTDOWN' || gameState === 'WAITING') {
         if (e.code === 'Space' || e.code === 'Enter') {
           e.preventDefault();
@@ -165,12 +158,10 @@ export function HomePage() {
   }, [history]);
   return (
     <div
-      className="min-h-screen bg-neutral-950 flex flex-col items-center scanline touch-none overflow-hidden select-none"
+      className="min-h-screen bg-neutral-950 flex flex-col items-center scanline touch-none overflow-x-hidden select-none"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
-        // Prevent trigger if clicking UI buttons
         if (target.closest('button') || target.closest('a')) return;
-        // Only trigger during active game phases
         if (gameState === 'IDLE' || gameState === 'COUNTDOWN' || gameState === 'WAITING') {
           handleTrigger();
         }
@@ -184,27 +175,26 @@ export function HomePage() {
             </div>
             <div className="flex flex-col">
               <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
-              <span className="text-[10px] text-primary/80 font-bold uppercase tracking-[0.3em] mt-1 ml-1">Professional Benchmark Edition</span>
+              <span className="text-[10px] text-primary/80 font-bold uppercase tracking-[0.3em] mt-1 ml-1">Professional Timing Engine</span>
             </div>
           </div>
-          <div className="hidden sm:flex flex-col items-end">
-            <span className="text-[10px] text-neutral-500 uppercase font-bold">Latency Mode</span>
-            <span className="text-[10px] text-accent font-black uppercase tracking-widest">Ultra-Low Performance.now()</span>
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">v2.1.0-PRO</span>
           </div>
         </header>
-        <main className="flex-1 flex flex-col items-center justify-center gap-12 sm:gap-16">
-          <div className="w-full max-w-2xl transform scale-95 sm:scale-100 transition-transform">
+        <main className="flex-1 flex flex-col items-center justify-center gap-8 sm:gap-16">
+          <div className="w-full max-w-2xl px-2">
             <Semaphore lightsActive={activeLights} />
           </div>
-          <div className="text-center h-48 sm:h-64 flex flex-col items-center justify-center">
+          <div className="text-center h-40 sm:h-64 flex flex-col items-center justify-center w-full">
             <AnimatePresence mode="wait">
               {gameState === 'IDLE' && (
                 <motion.div
                   key="idle"
-                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   className="space-y-4"
                 >
-                  <p className="text-neutral-400 font-bold tracking-[0.4em] uppercase text-sm sm:text-base animate-pulse">Tap Screen or Press Space</p>
+                  <p className="text-neutral-400 font-bold tracking-[0.4em] uppercase text-xs sm:text-base animate-pulse">Tap Screen or Press Space</p>
                   <p className="text-[10px] text-neutral-600 uppercase tracking-widest">to initiate start procedure</p>
                 </motion.div>
               )}
@@ -214,7 +204,7 @@ export function HomePage() {
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   className="flex flex-col items-center"
                 >
-                  <p className="text-neutral-500 font-black text-2xl tracking-[0.4em] uppercase">STAND BY</p>
+                  <p className="text-neutral-500 font-black text-xl sm:text-2xl tracking-[0.4em] uppercase">STAND BY</p>
                 </motion.div>
               )}
               {gameState === 'WAITING' && (
@@ -223,30 +213,30 @@ export function HomePage() {
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
                 <motion.div
                   key="result"
-                  initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-                  className="flex flex-col items-center gap-6"
+                  initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                  className="flex flex-col items-center gap-4 sm:gap-6 w-full"
                 >
-                  <div className="relative">
+                  <div className="relative inline-block">
                     <p className={cn(
-                      "text-7xl sm:text-9xl font-black tabular-nums tracking-tighter leading-none",
+                      "text-5xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tabular-nums tracking-tighter leading-none px-2",
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch' : 'text-accent',
                       isNewBest && gameState === 'RESULT' && "animate-glitch"
                     )}>
                       {gameState === 'JUMP_START' ? 'JUMP' : `${lastReaction?.toFixed(3)}s`}
                     </p>
                     {isNewBest && gameState === 'RESULT' && (
-                      <div className="absolute -top-6 -right-12 bg-amber-500 text-black text-[10px] px-2 py-1 font-black uppercase shadow-glow z-20 border border-black transform rotate-12">
+                      <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-8 bg-amber-500 text-black text-[8px] sm:text-[10px] px-2 py-1 font-black uppercase shadow-glow z-20 border border-black transform rotate-12 whitespace-nowrap">
                         NEW BEST
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-center gap-6">
-                    <p className={cn("text-sm sm:text-base font-bold uppercase tracking-[0.3em]", getPerformanceMessage(lastReaction ?? 0).color)}>
+                  <div className="flex flex-col items-center gap-4 sm:gap-6 w-full px-4">
+                    <p className={cn("text-xs sm:text-base font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-center", getPerformanceMessage(lastReaction ?? 0).color)}>
                       {getPerformanceMessage(lastReaction ?? 0).label}
                     </p>
                     <Button
                       onClick={resetToIdle}
-                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.2em] px-8 py-6 rounded-none glow-red h-auto text-lg group"
+                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.2em] px-6 sm:px-10 py-5 sm:py-6 rounded-none glow-red h-auto text-base sm:text-lg group w-full sm:w-auto"
                     >
                       <RotateCcw className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-500" />
                       Retry
@@ -257,15 +247,15 @@ export function HomePage() {
             </AnimatePresence>
           </div>
         </main>
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <RetroCard title="Session Stats" className="md:col-span-1">
+        <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <RetroCard title="Session Stats">
             <div className="space-y-4">
               <div className="flex justify-between items-center bg-neutral-950/50 p-3 border border-neutral-800/50">
                 <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2">
                   <Star className="w-3 h-3 text-amber-500" /> Personal Best
                 </span>
                 <span className={cn(
-                  "font-mono text-xl font-black tracking-tight",
+                  "font-mono text-lg sm:text-xl font-black tracking-tight",
                   bestTime === Infinity ? "text-neutral-800" : (bestTime <= 0.220 ? "text-accent" : "text-white")
                 )}>
                   {bestTime === Infinity ? '--.---' : `${bestTime.toFixed(3)}s`}
@@ -291,7 +281,7 @@ export function HomePage() {
               </div>
             </div>
           </RetroCard>
-          <RetroCard title="Pro Benchmarks" className="md:col-span-1">
+          <RetroCard title="Pro Benchmarks">
             <div className="space-y-2">
               {PRO_BENCHMARKS.map((pro, idx) => (
                 <div key={idx} className="flex justify-between items-center text-[11px] font-mono py-1 border-b border-neutral-800/30 last:border-0">
@@ -314,7 +304,7 @@ export function HomePage() {
               ))}
             </div>
           </RetroCard>
-          <RetroCard title="Telemetry Log" className="md:col-span-1">
+          <RetroCard title="Telemetry Log">
             <ScrollArea className="h-44 pr-4">
               <div className="space-y-3">
                 {history.length === 0 ? (
