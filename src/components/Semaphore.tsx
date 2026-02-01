@@ -13,7 +13,7 @@ export function Semaphore({ lightsActive }: SemaphoreProps) {
             {/* Top Light */}
             <div
               className={cn(
-                "w-7 h-7 sm:w-12 sm:h-12 rounded-full transition-all duration-75",
+                "w-7 h-7 sm:w-12 sm:h-12 rounded-full",
                 i < lightsActive
                   ? "bg-red-600 glow-red border-red-400 border"
                   : "bg-neutral-900 border-neutral-800 border shadow-none"
@@ -22,7 +22,7 @@ export function Semaphore({ lightsActive }: SemaphoreProps) {
             {/* Bottom Light */}
             <div
               className={cn(
-                "w-7 h-7 sm:w-12 sm:h-12 rounded-full transition-all duration-75",
+                "w-7 h-7 sm:w-12 sm:h-12 rounded-full",
                 i < lightsActive
                   ? "bg-red-600 glow-red border-red-400 border"
                   : "bg-neutral-900 border-neutral-800 border shadow-none"
