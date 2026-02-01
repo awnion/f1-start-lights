@@ -7,7 +7,7 @@ import { Semaphore } from '@/components/Semaphore';
 import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-const STORAGE_KEY = 'f1_reflex_history_v3';
+const STORAGE_KEY = 'f1_start_lights_v1';
 const INPUT_DEBOUNCE_MS = 150;
 const RESULT_COOLDOWN_MS = 600;
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
@@ -108,18 +108,16 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
-    // 1. Debounce rapid spam (ignore if too close to previous action)
+    // 1. Debounce rapid spam
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     // 2. Prevent double processing
     if (processingRef.current) return;
-    // 3. Logic based on state
     if (gameState === 'IDLE') {
       lastActionTimeRef.current = now;
       startSequence();
       return;
     }
     if (gameState === 'RESULT' || gameState === 'JUMP_START') {
-      // Cooldown check for restart to prevent accidental double-taps
       if (now - lastActionTimeRef.current < RESULT_COOLDOWN_MS) return;
       lastActionTimeRef.current = now;
       startSequence();
@@ -176,7 +174,7 @@ export function HomePage() {
   };
   const clearData = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("DANGER: PERMANENTLY WIPE ALL SESSION RECORDS?")) {
+    if (confirm("Wipe all session records?")) {
       setHistory([]);
       localStorage.removeItem(STORAGE_KEY);
       resetToIdle();
@@ -201,7 +199,16 @@ export function HomePage() {
             <div className="bg-primary p-2 glow-red transform -skew-x-12">
               <Cpu className="w-6 h-6 sm:w-10 sm:h-10 text-white transform skew-x-12" />
             </div>
-            <h1 className="text-3xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 START LIGHTS</h1>
+            <h1 className="text-3xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">
+              F1 START LIGHTS
+            </h1>
+          </div>
+          <div className="hidden sm:flex flex-col items-end gap-1">
+            <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">System Status</div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+              <span className="text-xs text-neutral-400 font-mono">READY_FOR_START</span>
+            </div>
           </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
@@ -216,7 +223,9 @@ export function HomePage() {
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   className="space-y-4"
                 >
-                  <p className="text-neutral-400 font-bold tracking-[0.5em] uppercase text-sm sm:text-xl animate-pulse">Tap Screen to Start</p>
+                  <p className="text-neutral-400 font-bold tracking-[0.5em] uppercase text-sm sm:text-xl animate-pulse">
+                    Tap or Press Space to Start
+                  </p>
                 </motion.div>
               )}
               {gameState === 'COUNTDOWN' && (
@@ -271,7 +280,7 @@ export function HomePage() {
           </div>
         </main>
         <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
-          <RetroCard title="Pro Benchmarks">
+          <RetroCard title="F1 Benchmarks">
             <div className="space-y-2">
               {PRO_BENCHMARKS.map((pro, idx) => (
                 <div key={idx} className="flex justify-between items-center text-[11px] font-mono py-1.5 border-b border-neutral-800/30 last:border-0">
@@ -292,7 +301,7 @@ export function HomePage() {
               ))}
             </div>
           </RetroCard>
-          <RetroCard title="Personal Performance">
+          <RetroCard title="Session Statistics">
             <div className="space-y-4">
               <div className="flex justify-between items-center bg-neutral-950/80 p-4 border border-neutral-800/50 relative overflow-hidden">
                 <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2 relative z-10">
@@ -320,17 +329,17 @@ export function HomePage() {
                   className="w-full border-neutral-800 bg-neutral-900/50 text-neutral-600 hover:text-red-500 hover:border-red-900/50 transition-all uppercase text-[10px] tracking-[0.2em] h-10 rounded-none font-bold"
                   onClick={clearData}
                 >
-                  Clear Records
+                  Clear Session
                 </Button>
               </div>
             </div>
           </RetroCard>
-          <RetroCard title="Session History">
+          <RetroCard title="Race History">
             <ScrollArea className="h-44 pr-4">
               <div className="space-y-3">
                 {history.length === 0 ? (
                   <div className="h-32 flex items-center justify-center text-neutral-800 text-[10px] uppercase font-bold tracking-[0.3em]">
-                    No Session Data
+                    Standby
                   </div>
                 ) : (
                   history.map((attempt, idx) => (
@@ -356,7 +365,6 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
-      {/* Retro CRT Overlays */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.2),rgba(0,255,0,0.1),rgba(0,0,255,0.2))] bg-[length:100%_4px,3px_100%]" />
         <div className="absolute inset-0 opacity-[0.01] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
