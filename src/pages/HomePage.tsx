@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { Semaphore } from '@/components/Semaphore';
 import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 const STORAGE_KEY = 'f1_start_lights_v1';
 const INPUT_DEBOUNCE_MS = 150;
 const RESULT_COOLDOWN_MS = 600;
@@ -297,49 +296,47 @@ export function HomePage() {
             </div>
           </RetroCard>
           <RetroCard title="Personal Leaderboard (Top 5)">
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-4">
-                {topTimes.length === 0 ? (
-                  <div className="h-48 flex flex-col items-center justify-center text-neutral-800 gap-3">
-                    <Trophy className="w-10 h-10 opacity-20" />
-                    <p className="text-xs uppercase font-bold tracking-[0.3em]">No data recorded</p>
-                  </div>
-                ) : (
-                  topTimes.map((attempt, idx) => {
-                    const perf = getPerformanceMessage(attempt.time);
-                    return (
-                      <div key={attempt.id} className="flex items-center justify-between font-mono border-b border-neutral-800/30 pb-5 last:border-0">
-                        <div className="flex items-center gap-4">
-                          <span className={cn(
-                            "text-xl font-black italic w-8",
-                            idx === 0 ? "text-amber-500" : "text-neutral-700"
-                          )}>
-                            #{idx + 1}
+            <div className="space-y-4">
+              {topTimes.length === 0 ? (
+                <div className="h-48 flex flex-col items-center justify-center text-neutral-800 gap-3">
+                  <Trophy className="w-10 h-10 opacity-20" />
+                  <p className="text-xs uppercase font-bold tracking-[0.3em]">No data recorded</p>
+                </div>
+              ) : (
+                topTimes.map((attempt, idx) => {
+                  const perf = getPerformanceMessage(attempt.time);
+                  return (
+                    <div key={attempt.id} className="flex items-center justify-between font-mono border-b border-neutral-800/30 pb-5 last:border-0">
+                      <div className="flex items-center gap-4">
+                        <span className={cn(
+                          "text-xl font-black italic w-8",
+                          idx === 0 ? "text-amber-500" : "text-neutral-700"
+                        )}>
+                          #{idx + 1}
+                        </span>
+                        <div className="flex flex-col">
+                          <span className={cn("font-bold text-sm uppercase tracking-widest", perf.color)}>
+                            {perf.label}
                           </span>
-                          <div className="flex flex-col">
-                            <span className={cn("font-bold text-sm uppercase tracking-widest", perf.color)}>
-                              {perf.label}
-                            </span>
-                            <span className="text-[10px] text-neutral-600 uppercase">
-                              {new Date(attempt.timestamp).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={cn(
-                            "font-black tabular-nums text-xl",
-                            idx === 0 ? "text-accent" : "text-white"
-                          )}>
-                            {attempt.time.toFixed(3)}s
+                          <span className="text-[10px] text-neutral-600 uppercase">
+                            {new Date(attempt.timestamp).toLocaleDateString()}
                           </span>
-                          {idx === 0 && <Star className="w-5 h-5 text-amber-500 fill-amber-500" />}
                         </div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </ScrollArea>
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "font-black tabular-nums text-xl",
+                          idx === 0 ? "text-accent" : "text-white"
+                        )}>
+                          {attempt.time.toFixed(3)}s
+                        </span>
+                        {idx === 0 && <Star className="w-5 h-5 text-amber-500 fill-amber-500" />}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </RetroCard>
         </div>
       </div>
