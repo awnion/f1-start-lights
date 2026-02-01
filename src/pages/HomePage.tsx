@@ -13,7 +13,7 @@ const RESULT_COOLDOWN_MS = 600;
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
-  time: number; // Negative for jump starts (ms early), Positive for reaction (seconds)
+  time: number;
   timestamp: number;
 }
 const PRO_BENCHMARKS = [
@@ -287,9 +287,9 @@ export function HomePage() {
         </main>
         <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
           <RetroCard title="F1 Benchmarks">
-            <div className="space-y-2">
+            <div className="space-y-1">
               {PRO_BENCHMARKS.map((pro, idx) => (
-                <div key={idx} className="flex justify-between items-center text-[10px] font-mono py-1.5 border-b border-neutral-800/30 last:border-0">
+                <div key={idx} className="flex justify-between items-center text-[10px] font-mono py-1 border-b border-neutral-800/30 last:border-0">
                   <div className="flex flex-col">
                     <span className="text-neutral-200 font-bold uppercase">{pro.name}</span>
                     <span className="text-[8px] text-neutral-600 uppercase tracking-tighter">{pro.label}</span>
@@ -342,7 +342,7 @@ export function HomePage() {
           </RetroCard>
           <RetroCard title="Race History">
             <ScrollArea className="h-44 pr-4">
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {history.length === 0 ? (
                   <div className="h-32 flex items-center justify-center text-neutral-800 text-[9px] uppercase font-bold tracking-[0.3em]">
                     Standby
