@@ -67,7 +67,6 @@ export function HomePage() {
     const validTimes = history.filter(a => a.time > 0).map(a => a.time);
     return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
   }, [history]);
-  // CRITICAL F1 RULE: Top row ALWAYS off/black—no red/glow. Bottom only active (i < lightsActive). Never change top.
   const startSequence = useCallback(() => {
     clearAllTimers();
     processingRef.current = false;
@@ -77,15 +76,16 @@ export function HomePage() {
     setActiveLights(0);
     setLastReaction(null);
     setIsNewRecord(false);
-    // Sequence lighting: only 1 row of lights on the gantry illuminates.
+    // Sequence lighting: 1 row of lights on the gantry illuminates at 1s intervals
     for (let i = 1; i <= 5; i++) {
       const timer = window.setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
+    // Professional standard: Random hold starts immediately after the 5th light (5000ms mark)
     const holdTriggerTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200; 
+      const randomHold = Math.random() * 2800 + 200; // 0.2s to 3s hold
       expectedLightsOutRef.current = performance.now() + randomHold;
       const goTimer = window.setTimeout(() => {
         const now = performance.now();
@@ -94,7 +94,7 @@ export function HomePage() {
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(goTimer);
-    }, 6000); 
+    }, 5000); // Optimized from 6000ms to 5000ms for tighter cadence
     activeTimersRef.current.push(holdTriggerTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent | React.PointerEvent) => {
@@ -105,7 +105,7 @@ export function HomePage() {
     clearAllTimers();
     processingRef.current = false;
     lightsOutTimeRef.current = 0;
-    expectedLightsOutRef.current = 0;
+    expectedLightsOutRef.current = 0; // Harden reset state
     setGameState('IDLE');
     setActiveLights(0);
     setLastReaction(null);
@@ -113,6 +113,7 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
+    // Prevent double triggers/ghost inputs
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     if (processingRef.current) return;
     if (gameState === 'IDLE') {
@@ -376,6 +377,7 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
+      {/* Screen Overlays */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.2),rgba(0,255,0,0.1),rgba(0,0,255,0.2))] bg-[length:100%_4px,3px_100%]" />
         <div className="absolute inset-0 opacity-[0.01] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
