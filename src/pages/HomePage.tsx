@@ -115,7 +115,6 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
-    // Immediate lock check and update to prevent re-entrant calls
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     if (processingRef.current) return;
     if (gameState === 'IDLE') {
@@ -145,7 +144,6 @@ export function HomePage() {
       lastActionTimeRef.current = now;
       processingRef.current = true;
       const reaction = (now - lightsOutTimeRef.current) / 1000;
-      // Achievement logic: first valid run OR beating current best
       const isPB = reaction > 0 && reaction < bestTime;
       const isElite = reaction > 0 && reaction < 0.200;
       setLastReaction(reaction);
@@ -277,16 +275,16 @@ export function HomePage() {
         </main>
         <div className="mt-8 sm:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8" data-no-trigger="true">
           <RetroCard title="F1 Driver Benchmarks">
-            <div className="space-y-4">
+            <div className="space-y-0">
               {PRO_BENCHMARKS.map((pro, idx) => (
-                <div key={idx} className="flex justify-between items-center py-3 border-b border-neutral-800/40 last:border-0 group">
+                <div key={idx} className="flex justify-between items-center py-4 border-b border-neutral-800/40 last:border-0 group">
                   <div className="flex flex-col">
                     <span className="text-neutral-200 font-bold uppercase text-base group-hover:text-primary transition-colors">{pro.name}</span>
                     <span className="text-[10px] text-neutral-600 uppercase tracking-widest">{pro.label}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={cn(
-                      "font-black tabular-nums font-mono text-lg",
+                      "font-black tabular-nums font-mono text-2xl tracking-tighter",
                       bestTime <= pro.time ? "text-accent" : "text-neutral-600"
                     )}>
                       {pro.time.toFixed(3)}s
@@ -298,17 +296,16 @@ export function HomePage() {
             </div>
           </RetroCard>
           <RetroCard title="Personal Top 5">
-            <div className="space-y-4">
+            <div className="space-y-0">
               {topTimes.length === 0 ? (
-                <div className="h-48 flex flex-col items-center justify-center text-neutral-800 gap-4">
-                  <Trophy className="w-12 h-12 opacity-20" />
+                <div className="h-48 flex flex-col items-center justify-center text-neutral-800">
                   <p className="text-xs uppercase font-bold tracking-[0.4em] opacity-40">Awaiting your first run</p>
                 </div>
               ) : (
                 topTimes.map((attempt, idx) => {
                   const perf = getPerformanceMessage(attempt.time);
                   return (
-                    <div key={attempt.id} className="flex items-center justify-between font-mono border-b border-neutral-800/40 pb-5 last:border-0 group">
+                    <div key={attempt.id} className="flex items-center justify-between font-mono py-4 border-b border-neutral-800/40 last:border-0 group">
                       <div className="flex items-center gap-4">
                         <span className={cn(
                           "text-2xl font-black italic w-10 text-center",
@@ -332,7 +329,6 @@ export function HomePage() {
                         )}>
                           {attempt.time.toFixed(3)}s
                         </span>
-                        {idx === 0 && <Star className="w-6 h-6 text-amber-500 fill-amber-500 shadow-glow" />}
                       </div>
                     </div>
                   );
