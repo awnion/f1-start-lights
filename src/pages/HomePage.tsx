@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Timer, Trophy, RotateCcw, Zap, Cpu, Star } from 'lucide-react';
+import { Timer, Trophy, RotateCcw, Zap, Cpu, Star, Gauge, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,13 @@ interface Attempt {
   time: number; // 0 for jump start
   timestamp: number;
 }
+const PRO_BENCHMARKS = [
+  { name: 'Graham Hill', time: 0.160, label: 'World Record' },
+  { name: 'Lewis Hamilton', time: 0.165, label: '7x Champ' },
+  { name: 'Max Verstappen', time: 0.180, label: 'Peak Performance' },
+  { name: 'F1 Pole Average', time: 0.200, label: 'Elite' },
+  { name: 'Avg F1 Driver', time: 0.220, label: 'Pro Standard' },
+];
 export function HomePage() {
   const [gameState, setGameState] = useState<GameState>('IDLE');
   const [activeLights, setActiveLights] = useState(0);
@@ -21,7 +28,7 @@ export function HomePage() {
   const lightsOutTimeRef = useRef<number>(0);
   const activeTimersRef = useRef<NodeJS.Timeout[]>([]);
   useEffect(() => {
-    document.title = "F1 REFLEX | Retro Precision Simulator";
+    document.title = "F1 REFLEX | Professional Benchmarks";
   }, []);
   const [history, setHistory] = useState<Attempt[]>(() => {
     try {
@@ -88,7 +95,7 @@ export function HomePage() {
     setLastReaction(null);
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
-    const now = performance.now(); // Capture timestamp immediately to minimize latency
+    const now = performance.now();
     if (gameState === 'IDLE') {
       startSequence();
       return;
@@ -120,7 +127,6 @@ export function HomePage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'Enter') {
-        // Enforce explicit Retry button in result states to prevent accidental double-triggers
         if (gameState !== 'RESULT' && gameState !== 'JUMP_START') {
           e.preventDefault();
           handleTrigger();
@@ -163,7 +169,7 @@ export function HomePage() {
             </div>
             <div className="flex flex-col">
               <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
-              <span className="text-[10px] text-primary/80 font-bold uppercase tracking-[0.3em] mt-1 ml-1">Precision Semaphore V1.1</span>
+              <span className="text-[10px] text-primary/80 font-bold uppercase tracking-[0.3em] mt-1 ml-1">Professional Benchmark Edition</span>
             </div>
           </div>
         </header>
@@ -193,13 +199,7 @@ export function HomePage() {
                 </motion.div>
               )}
               {gameState === 'WAITING' && (
-                <motion.p
-                  key="waiting"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="text-neutral-200 font-black text-2xl sm:text-4xl tracking-[0.15em] uppercase"
-                >
-                  WAIT FOR LIGHTS OUT...
-                </motion.p>
+                <motion.div key="waiting" className="h-full" />
               )}
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
                 <motion.div
@@ -240,23 +240,23 @@ export function HomePage() {
         </main>
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
           <RetroCard title="Session Stats" className="md:col-span-1">
-            <div className="space-y-5">
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-xs uppercase flex items-center gap-2">
-                  <Star className="w-3 h-3 text-amber-500" /> Best Reflex
+            <div className="space-y-4">
+              <div className="flex justify-between items-center bg-neutral-950/50 p-3 border border-neutral-800/50">
+                <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2">
+                  <Star className="w-3 h-3 text-amber-500" /> Personal Best
                 </span>
                 <span className={cn(
                   "font-mono text-xl font-black tracking-tight",
-                  bestTime === Infinity ? "text-neutral-800" : "text-accent"
+                  bestTime === Infinity ? "text-neutral-800" : (bestTime <= 0.220 ? "text-accent" : "text-white")
                 )}>
                   {bestTime === Infinity ? '--.---' : `${bestTime.toFixed(3)}s`}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-xs uppercase flex items-center gap-2">
-                  <Timer className="w-3 h-3 text-blue-500" /> Avg (Valid)
+              <div className="flex justify-between items-center px-3">
+                <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2">
+                  <Timer className="w-3 h-3 text-blue-500" /> Valid Average
                 </span>
-                <span className="text-white font-mono font-bold">
+                <span className="text-white font-mono font-bold text-sm">
                   {history.length > 0 && history.some(a => a.time > 0)
                     ? (history.filter(a => a.time > 0).reduce((acc, curr) => acc + curr.time, 0) / history.filter(a => a.time > 0).length).toFixed(3)
                     : '0.000'}s
@@ -269,39 +269,61 @@ export function HomePage() {
                   className="w-full border-neutral-800 bg-neutral-900/50 text-neutral-600 hover:text-red-500 hover:border-red-900/50 transition-all uppercase text-[10px] tracking-[0.2em] h-10 rounded-none"
                   onClick={clearData}
                 >
-                  Clear Data
+                  Reset History
                 </Button>
               </div>
             </div>
           </RetroCard>
-          <RetroCard title="Telemetry Log" className="md:col-span-2">
+          <RetroCard title="Pro Benchmarks" className="md:col-span-1">
+            <div className="space-y-2">
+              {PRO_BENCHMARKS.map((pro, idx) => (
+                <div key={idx} className="flex justify-between items-center text-[11px] font-mono py-1 border-b border-neutral-800/30 last:border-0">
+                  <div className="flex flex-col">
+                    <span className="text-neutral-200 font-bold uppercase">{pro.name}</span>
+                    <span className="text-[9px] text-neutral-600 uppercase tracking-tighter">{pro.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "font-black tabular-nums",
+                      bestTime <= pro.time ? "text-accent" : "text-neutral-500"
+                    )}>
+                      {pro.time.toFixed(3)}s
+                    </span>
+                    {bestTime <= pro.time && (
+                      <Zap className="w-2.5 h-2.5 text-amber-500" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </RetroCard>
+          <RetroCard title="Telemetry Log" className="md:col-span-1">
             <ScrollArea className="h-44 pr-4">
               <div className="space-y-3">
                 {history.length === 0 ? (
-                  <div className="h-32 flex items-center justify-center text-neutral-700 text-xs uppercase font-bold tracking-widest">
-                    No Telemetry Recorded
+                  <div className="h-32 flex items-center justify-center text-neutral-700 text-[10px] uppercase font-bold tracking-widest">
+                    Empty Buffer
                   </div>
                 ) : (
                   history.map((attempt, idx) => (
                     <div
                       key={attempt.id}
-                      className="flex items-center justify-between text-xs font-mono border-b border-neutral-800/30 pb-2 last:border-0"
+                      className="flex items-center justify-between text-[10px] font-mono border-b border-neutral-800/30 pb-2 last:border-0"
                     >
-                      <div className="flex items-center gap-4">
-                        <span className="text-neutral-600 w-8 font-bold">#{history.length - idx}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-neutral-700 w-5">#{history.length - idx}</span>
                         {attempt.time === 0 ? (
-                          <span className="text-red-500 font-black italic uppercase text-[10px]">Jump Start</span>
+                          <span className="text-red-500 font-black italic uppercase">Jump</span>
                         ) : (
                           <span className={cn(
-                            "flex items-center gap-2 font-bold",
-                            attempt.time <= bestTime && history.length > 1 ? "text-accent" : "text-neutral-300"
+                            "flex items-center gap-1 font-bold",
+                            attempt.time <= bestTime && history.length > 1 ? "text-accent" : "text-neutral-400"
                           )}>
-                            <Zap className={cn("w-3 h-3", attempt.time <= bestTime && history.length > 1 ? "text-amber-400" : "text-accent/30")} />
                             {attempt.time.toFixed(3)}s
                           </span>
                         )}
                       </div>
-                      <span className="text-neutral-600 text-[10px]">
+                      <span className="text-neutral-700 text-[9px]">
                         {new Date(attempt.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </span>
                     </div>
