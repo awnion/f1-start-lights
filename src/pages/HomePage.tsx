@@ -8,12 +8,12 @@ import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 const STORAGE_KEY = 'f1_reflex_history_v3';
-const INPUT_DEBOUNCE_MS = 150; // Prevent rapid double-triggers
-const RESULT_COOLDOWN_MS = 400; // Delay before a result screen allows a restart
+const INPUT_DEBOUNCE_MS = 150;
+const RESULT_COOLDOWN_MS = 400;
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
-  time: number; // 0 for jump start
+  time: number;
   timestamp: number;
 }
 const PRO_BENCHMARKS = [
@@ -71,16 +71,12 @@ export function HomePage() {
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
-    // Sequence: 1 light per second (0s-4s)
-    // 1st light at 1s, 2nd at 2s, 3rd at 3s, 4th at 4s, 5th at 5s
     for (let i = 1; i <= 5; i++) {
       const timer = window.setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
-    // Immediately after the 5th light (at 5 seconds), trigger the random hold period.
-    // Previous code had an extra 1s delay (6s total).
     const prepareTimer = window.setTimeout(() => {
       const randomHold = Math.random() * 2800 + 200;
       const holdTimer = window.setTimeout(() => {
@@ -106,17 +102,14 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
-    // Hard debounce to prevent mechanical chatter or accidental double taps
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     lastActionTimeRef.current = now;
     if (processingRef.current) return;
-    // Logic for starting/restarting
     if (gameState === 'IDLE') {
       startSequence();
       return;
     }
     if (gameState === 'RESULT' || gameState === 'JUMP_START') {
-      // Cooldown after result to prevent accidental instant restart from the "click" that finished the game
       if (now - (lightsOutTimeRef.current || 0) < RESULT_COOLDOWN_MS) return;
       startSequence();
       return;
@@ -126,8 +119,7 @@ export function HomePage() {
       clearAllTimers();
       setGameState('JUMP_START');
       setLastReaction(0);
-      // Record jump start timestamp for debounce logic
-      lightsOutTimeRef.current = now; 
+      lightsOutTimeRef.current = now;
       setHistory(prev => [{ id: crypto.randomUUID(), time: 0, timestamp: Date.now() }, ...prev].slice(0, 20));
       return;
     }
@@ -140,8 +132,8 @@ export function HomePage() {
       setGameState('RESULT');
       if (isNewPB || isElite) {
         confetti({
-          particleCount: reaction < 0.180 ? 300 : 150,
-          spread: reaction < 0.180 ? 100 : 70,
+          particleCount: reaction < 0.180 ? 350 : 150,
+          spread: reaction < 0.180 ? 120 : 70,
           origin: { y: 0.6 },
           colors: ['#ff0033', '#39ff14', '#ffffff', '#fbbf24']
         });
@@ -152,7 +144,7 @@ export function HomePage() {
   }, [gameState, startSequence, clearAllTimers, history, bestTime]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.repeat) return; // Ignore key repeat
+      if (e.repeat) return;
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
         handleTrigger();
@@ -166,11 +158,11 @@ export function HomePage() {
     if (time < 0.180) return { label: 'GODLIKE REFLEXES', color: 'text-emerald-400' };
     if (time < 0.230) return { label: 'F1 LEVEL', color: 'text-green-400' };
     if (time < 0.300) return { label: 'EXCELLENT', color: 'text-blue-400' };
-    return { label: 'COULD BE BETTER', color: 'text-neutral-500' };
+    return { label: 'COULD BE BETTER', color: 'text-neutral-600' };
   };
   const clearData = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Clear all race data and reset telemetry?")) {
+    if (confirm("DANGER: WIPE LOCAL TELEMETRY DATA?")) {
       setHistory([]);
       localStorage.removeItem(STORAGE_KEY);
       resetToIdle();
@@ -178,25 +170,28 @@ export function HomePage() {
   };
   const validAverage = useMemo(() => {
     const valid = history.filter(a => a.time > 0);
-    if (valid.length === 0) return 0;
-    return valid.reduce((acc, curr) => acc + curr.time, 0) / valid.length;
+    return valid.length === 0 ? 0 : valid.reduce((acc, curr) => acc + curr.time, 0) / valid.length;
   }, [history]);
   return (
     <div
-      className="min-h-screen bg-neutral-950 flex flex-col items-center scanline touch-none overflow-x-hidden select-none"
+      className="min-h-screen bg-neutral-950 flex flex-col items-center touch-none overflow-x-hidden select-none relative"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
-        if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger]')) return;
+        if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger="true"]')) return;
         handleTrigger();
       }}
     >
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col flex-1 py-8 md:py-10 lg:py-12">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col flex-1 py-8 md:py-10 lg:py-12 relative z-10">
         <header className="flex items-center justify-between mb-8 border-b border-neutral-800 pb-8">
           <div className="flex items-center gap-4 sm:gap-6">
             <div className="bg-primary p-2 glow-red transform -skew-x-12">
               <Cpu className="w-6 h-6 sm:w-10 sm:h-10 text-white transform skew-x-12" />
             </div>
-            <h1 className="text-2xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
+            <h1 className="text-3xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
+          </div>
+          <div className="hidden sm:flex flex-col items-end">
+             <span className="text-[10px] text-accent font-bold uppercase tracking-widest animate-pulse">Live Telemetry active</span>
+             <span className="text-[8px] text-neutral-600 font-mono uppercase">V3.0.4-PixelPerfect</span>
           </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
@@ -208,11 +203,11 @@ export function HomePage() {
               {gameState === 'IDLE' && (
                 <motion.div
                   key="idle"
-                  initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   className="space-y-4"
                 >
-                  <p className="text-neutral-400 font-bold tracking-[0.5em] uppercase text-xs sm:text-xl animate-pulse">Tap Screen or Press Space</p>
-                  <p className="text-[10px] text-neutral-600 uppercase tracking-widest font-mono">Zero Latency Tracking Engaged</p>
+                  <p className="text-neutral-400 font-bold tracking-[0.5em] uppercase text-sm sm:text-xl animate-pulse">Tap Screen to Start</p>
+                  <p className="text-[10px] text-neutral-700 uppercase tracking-widest font-mono">Precision timing protocol engaged</p>
                 </motion.div>
               )}
               {gameState === 'COUNTDOWN' && (
@@ -221,12 +216,17 @@ export function HomePage() {
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   className="flex flex-col items-center"
                 >
-                  <p className="text-neutral-500 font-black text-xl sm:text-4xl tracking-[0.6em] uppercase">STAND BY</p>
+                  <p className={cn(
+                    "font-black text-2xl sm:text-4xl tracking-[0.6em] uppercase transition-colors duration-500",
+                    activeLights === 5 ? "text-neutral-700" : "text-neutral-400"
+                  )}>
+                    STAND BY
+                  </p>
                 </motion.div>
               )}
               {gameState === 'WAITING' && (
                 <motion.div key="waiting" className="h-full flex items-center justify-center">
-                   <p className="text-white font-black text-2xl sm:text-5xl tracking-[0.8em] uppercase animate-glitch">WATCH</p>
+                   <p className="text-white font-black text-3xl sm:text-6xl tracking-[0.8em] uppercase animate-glitch">WATCH</p>
                 </motion.div>
               )}
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
@@ -235,7 +235,7 @@ export function HomePage() {
                   initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                   className="flex flex-col items-center gap-4 sm:gap-6 w-full"
                 >
-                  <div className="relative inline-block">
+                  <div className="relative inline-block" data-no-trigger="true">
                     <p className={cn(
                       "text-6xl sm:text-9xl lg:text-[12rem] font-black tabular-nums tracking-tighter leading-none px-2 transition-colors",
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch' : 'text-accent',
@@ -249,14 +249,13 @@ export function HomePage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-center gap-4 sm:gap-6 w-full px-4">
+                  <div className="flex flex-col items-center gap-4 sm:gap-6 w-full px-4" data-no-trigger="true">
                     <p className={cn("text-xs sm:text-xl font-bold uppercase tracking-[0.2em] sm:tracking-[0.4em] text-center", getPerformanceMessage(lastReaction ?? 0).color)}>
                       {getPerformanceMessage(lastReaction ?? 0).label}
                     </p>
                     <Button
                       onClick={resetToIdle}
-                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.3em] px-6 sm:px-14 py-4 sm:py-6 rounded-none glow-red h-auto text-sm sm:text-2xl group w-full sm:w-auto"
-                      data-no-trigger="true"
+                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.3em] px-10 sm:px-14 py-4 sm:py-6 rounded-none glow-red h-auto text-sm sm:text-2xl group w-full sm:w-auto mt-2"
                     >
                       <RotateCcw className="w-5 h-5 sm:w-8 sm:h-8 mr-2 sm:mr-4 group-hover:rotate-180 transition-transform duration-500" />
                       Restart
@@ -268,7 +267,7 @@ export function HomePage() {
           </div>
         </main>
         <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
-          <RetroCard title="Hall of Fame">
+          <RetroCard title="World Class Data">
             <div className="space-y-2">
               {PRO_BENCHMARKS.map((pro, idx) => (
                 <div key={idx} className="flex justify-between items-center text-[11px] font-mono py-1.5 border-b border-neutral-800/30 last:border-0">
@@ -279,26 +278,21 @@ export function HomePage() {
                   <div className="flex items-center gap-2">
                     <span className={cn(
                       "font-black tabular-nums",
-                      bestTime <= pro.time ? "text-accent" : "text-neutral-500"
+                      bestTime <= pro.time ? "text-accent" : "text-neutral-600"
                     )}>
                       {pro.time.toFixed(3)}s
                     </span>
-                    {bestTime <= pro.time && (
-                      <Zap className="w-2.5 h-2.5 text-amber-500" />
-                    )}
+                    {bestTime <= pro.time && <Zap className="w-2.5 h-2.5 text-amber-500" />}
                   </div>
                 </div>
               ))}
             </div>
           </RetroCard>
-          <RetroCard title="Session Analytics">
+          <RetroCard title="Telemetry Summary">
             <div className="space-y-4">
-              <div className="flex justify-between items-center bg-neutral-950/50 p-4 border border-neutral-800/50 relative overflow-hidden">
-                {bestTime !== Infinity && bestTime < 0.200 && (
-                   <div className="absolute inset-0 bg-accent/5 animate-pulse pointer-events-none" />
-                )}
+              <div className="flex justify-between items-center bg-neutral-950/80 p-4 border border-neutral-800/50 relative overflow-hidden">
                 <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2 relative z-10">
-                  <Star className="w-3 h-3 text-amber-500" /> Best
+                  <Star className="w-3 h-3 text-amber-500" /> PB
                 </span>
                 <span className={cn(
                   "font-mono text-xl font-black tracking-tight relative z-10",
@@ -309,7 +303,7 @@ export function HomePage() {
               </div>
               <div className="flex justify-between items-center px-4">
                 <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2">
-                  <Timer className="w-3 h-3 text-blue-500" /> Average
+                  <Timer className="w-3 h-3 text-blue-500" /> Avg
                 </span>
                 <span className="text-white font-mono font-bold text-sm">
                   {validAverage > 0 ? validAverage.toFixed(3) : '0.000'}s
@@ -319,41 +313,35 @@ export function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full border-neutral-800 bg-neutral-900/50 text-neutral-600 hover:text-red-500 hover:border-red-900/50 transition-all uppercase text-[10px] tracking-[0.2em] h-10 rounded-none"
+                  className="w-full border-neutral-800 bg-neutral-900/50 text-neutral-600 hover:text-red-500 hover:border-red-900/50 transition-all uppercase text-[10px] tracking-[0.2em] h-10 rounded-none font-bold"
                   onClick={clearData}
                 >
-                  Purge Memory
+                  Purge Storage
                 </Button>
               </div>
             </div>
           </RetroCard>
-          <RetroCard title="Data Stream">
+          <RetroCard title="Recent Logs">
             <ScrollArea className="h-44 pr-4">
               <div className="space-y-3">
                 {history.length === 0 ? (
-                  <div className="h-32 flex items-center justify-center text-neutral-700 text-[10px] uppercase font-bold tracking-widest">
-                    Awaiting Signal...
+                  <div className="h-32 flex items-center justify-center text-neutral-800 text-[10px] uppercase font-bold tracking-[0.3em]">
+                    No Data Locked
                   </div>
                 ) : (
                   history.map((attempt, idx) => (
-                    <div
-                      key={attempt.id}
-                      className="flex items-center justify-between text-[10px] font-mono border-b border-neutral-800/30 pb-2 last:border-0"
-                    >
+                    <div key={attempt.id} className="flex items-center justify-between text-[10px] font-mono border-b border-neutral-800/20 pb-2 last:border-0">
                       <div className="flex items-center gap-3">
                         <span className="text-neutral-700 w-5">#{history.length - idx}</span>
                         {attempt.time === 0 ? (
                           <span className="text-red-500 font-black italic uppercase">Jump</span>
                         ) : (
-                          <span className={cn(
-                            "flex items-center gap-1 font-bold",
-                            attempt.time <= bestTime && history.length > 1 && attempt.time > 0 ? "text-accent" : "text-neutral-400"
-                          )}>
+                          <span className={cn("font-bold", attempt.time <= bestTime && history.length > 1 ? "text-accent" : "text-neutral-400")}>
                             {attempt.time.toFixed(3)}s
                           </span>
                         )}
                       </div>
-                      <span className="text-neutral-700 text-[9px]">
+                      <span className="text-neutral-800 text-[9px]">
                         {new Date(attempt.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </span>
                     </div>
@@ -364,7 +352,13 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
-      <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+      {/* Primary CRT Overlays: Consolidated for performance */}
+      <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+        {/* Scanlines and RGB Shift */}
+        <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.2),rgba(0,255,0,0.1),rgba(0,0,255,0.2))] bg-[length:100%_4px,3px_100%]" />
+        {/* Static noise flicker */}
+        <div className="absolute inset-0 opacity-[0.01] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
+      </div>
     </div>
   );
 }

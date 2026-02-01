@@ -5,36 +5,38 @@ interface SemaphoreProps {
 }
 export function Semaphore({ lightsActive }: SemaphoreProps) {
   return (
-    <div className="w-full flex flex-row items-center justify-center gap-1.5 sm:gap-4 md:gap-5 p-4 pt-6 sm:pb-10 md:pb-14 bg-neutral-900/90 border-y-4 border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
+    <div className="w-full flex flex-row items-center justify-center gap-2 sm:gap-4 md:gap-6 p-4 pt-6 sm:pb-10 md:pb-14 bg-neutral-900/95 border-y-4 border-neutral-800 shadow-[0_0_60px_rgba(0,0,0,0.7)] relative overflow-hidden">
       {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex flex-col items-center">
-          {/* Light Pod - Standardized dimensions and strict alignment */}
-          <div className="w-12 sm:w-20 md:w-28 lg:w-32 h-28 sm:h-44 md:h-56 lg:h-64 bg-neutral-950 rounded-sm sm:rounded-lg border-2 border-neutral-800 flex flex-col items-center justify-between py-4 sm:py-6 md:py-8 shadow-inner transition-none overflow-hidden">
-            {/* Top Light: Fixed dimensions to prevent flex distortion */}
+        <div key={i} className="flex flex-col items-center flex-1 max-w-[140px]">
+          {/* Light Pod - Proportional scaling using aspect ratio */}
+          <div className="w-full aspect-[4/9] min-h-[120px] bg-neutral-950 rounded-sm sm:rounded-lg border-2 border-neutral-800 flex flex-col items-center justify-between py-[15%] sm:py-[20%] shadow-inner transition-none overflow-hidden relative">
+            {/* Top Light */}
             <div
               className={cn(
-                "w-8 h-8 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full transition-none flex-shrink-0",
+                "w-[70%] aspect-square rounded-full transition-none flex-shrink-0 relative z-10",
                 i < lightsActive
                   ? "bg-red-600 glow-red border-red-400 border-2"
                   : "bg-neutral-900 border-neutral-800 border-2 shadow-none"
               )}
             />
-            {/* Bottom Light: Identical constraints ensuring horizontal parity across all pods */}
+            {/* Bottom Light */}
             <div
               className={cn(
-                "w-8 h-8 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full transition-none flex-shrink-0",
+                "w-[70%] aspect-square rounded-full transition-none flex-shrink-0 relative z-10",
                 i < lightsActive
                   ? "bg-red-600 glow-red border-red-400 border-2"
                   : "bg-neutral-900 border-neutral-800 border-2 shadow-none"
               )}
             />
+            {/* Inner pod texture */}
+            <div className="absolute inset-0 opacity-[0.03] bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,white_2px,white_4px)]" />
           </div>
-          {/* Connector Rod Base - Perfectly centered under pod */}
-          <div className="h-4 sm:h-6 w-2 sm:w-3 bg-neutral-800 rounded-b mt-0" />
+          {/* Connector Rod Base */}
+          <div className="h-4 sm:h-8 w-2 sm:w-4 bg-neutral-800 rounded-b mt-0 shadow-lg" />
         </div>
       ))}
-      {/* Decorative vertical grid overlay */}
-      <div className="absolute inset-0 opacity-[0.08] pointer-events-none bg-[linear-gradient(90deg,transparent_95%,rgba(255,255,255,0.1)_100%)] bg-[length:30px_100%] sm:bg-[length:40px_100%]" />
+      {/* Decorative high-tech grid overlay */}
+      <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(90deg,transparent_98%,rgba(255,255,255,0.2)_100%),linear-gradient(0deg,transparent_98%,rgba(255,255,255,0.2)_100%)] bg-[length:40px_40px]" />
     </div>
   );
 }

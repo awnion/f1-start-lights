@@ -16,18 +16,15 @@
   }
   html {
     scroll-behavior: smooth;
-    background-color: #0f0f0f;
+    background-color: #0a0a0a;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
   body {
     @apply bg-background text-foreground font-mono overflow-x-hidden;
-    background-image:
-      radial-gradient(circle at 50% 50%, rgba(255, 0, 51, 0.05) 0%, transparent 100%),
-      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-    background-size: 100% 100%, 100% 4px, 3px 100%;
+    /* Clean background to prevent layering artifacts with the dedicated overlay */
+    background-color: #0a0a0a;
   }
 }
 @layer utilities {
@@ -40,20 +37,6 @@
   .scanline {
     position: relative;
     overflow: hidden;
-  }
-  .scanline::after {
-    content: " ";
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%), 
-                linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
-    z-index: 50; /* Ensure scanlines are on top but don't block interaction */
-    background-size: 100% 2px, 3px 100%;
-    pointer-events: none;
   }
   @keyframes glitch {
     0% { transform: translate(0); }
