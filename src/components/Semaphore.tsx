@@ -5,7 +5,7 @@ interface SemaphoreProps {
 }
 export function Semaphore({ lightsActive }: SemaphoreProps) {
   return (
-    <div className="w-full flex flex-row items-center justify-center gap-2 sm:gap-8 md:gap-12 lg:gap-16 p-4 sm:p-10 md:p-14 bg-neutral-900/90 border-y-4 border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
+    <div className="w-full flex flex-row items-center justify-center gap-1.5 sm:gap-4 md:gap-5 p-4 pt-0 sm:pb-10 md:pb-14 bg-neutral-900/90 border-y-4 border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="flex flex-col gap-2 sm:gap-4">
           {/* Light Pod - Standardized dimensions for production compatibility */}

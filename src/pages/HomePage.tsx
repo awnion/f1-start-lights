@@ -26,7 +26,6 @@ export function HomePage() {
   const [activeLights, setActiveLights] = useState(0);
   const [lastReaction, setLastReaction] = useState<number | null>(null);
   const lightsOutTimeRef = useRef<number>(0);
-  // Changed from NodeJS.Timeout[] to any[] for browser/node compatibility in build
   const activeTimersRef = useRef<any[]>([]);
   useEffect(() => {
     document.title = "F1 REFLEX";
@@ -171,7 +170,7 @@ export function HomePage() {
       }}
     >
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col flex-1 py-8 md:py-10 lg:py-12">
-        <header className="flex items-center justify-center mb-10 sm:mb-20 border-b border-neutral-800 pb-8">
+        <header className="flex items-center justify-center mb-0 border-b border-neutral-800 pb-8">
           <div className="flex items-center gap-6">
             <div className="bg-primary p-2 glow-red transform -skew-x-12">
               <Cpu className="w-8 h-8 sm:w-10 sm:h-10 text-white transform skew-x-12" />
@@ -179,11 +178,11 @@ export function HomePage() {
             <h1 className="text-3xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
           </div>
         </header>
-        <main className="flex-1 flex flex-col items-center justify-center gap-8 sm:gap-20">
+        <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
           <div className="w-full">
             <Semaphore lightsActive={activeLights} />
           </div>
-          <div className="text-center h-48 sm:h-72 flex flex-col items-center justify-center w-full">
+          <div className="text-center h-48 sm:h-64 flex flex-col items-center justify-center w-full">
             <AnimatePresence mode="wait">
               {gameState === 'IDLE' && (
                 <motion.div
@@ -211,7 +210,7 @@ export function HomePage() {
                 <motion.div
                   key="result"
                   initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                  className="flex flex-col items-center gap-4 sm:gap-10 w-full"
+                  className="flex flex-col items-center gap-4 sm:gap-6 w-full"
                 >
                   <div className="relative inline-block">
                     <p className={cn(
@@ -227,13 +226,13 @@ export function HomePage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-center gap-4 sm:gap-8 w-full px-4">
+                  <div className="flex flex-col items-center gap-4 sm:gap-6 w-full px-4">
                     <p className={cn("text-xs sm:text-xl font-bold uppercase tracking-[0.2em] sm:tracking-[0.4em] text-center", getPerformanceMessage(lastReaction ?? 0).color)}>
                       {getPerformanceMessage(lastReaction ?? 0).label}
                     </p>
                     <Button
                       onClick={resetToIdle}
-                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.3em] px-6 sm:px-14 py-4 sm:py-8 rounded-none glow-red h-auto text-sm sm:text-2xl group w-full sm:w-auto"
+                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.3em] px-6 sm:px-14 py-4 sm:py-6 rounded-none glow-red h-auto text-sm sm:text-2xl group w-full sm:w-auto"
                     >
                       <RotateCcw className="w-5 h-5 sm:w-8 sm:h-8 mr-2 sm:mr-4 group-hover:rotate-180 transition-transform duration-500" />
                       Restart
@@ -244,7 +243,7 @@ export function HomePage() {
             </AnimatePresence>
           </div>
         </main>
-        <div className="mt-8 sm:mt-24 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
+        <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
           <RetroCard title="Session Analytics">
             <div className="space-y-4">
               <div className="flex justify-between items-center bg-neutral-950/50 p-4 border border-neutral-800/50">
