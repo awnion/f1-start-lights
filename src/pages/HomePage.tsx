@@ -28,7 +28,7 @@ export function HomePage() {
   const lightsOutTimeRef = useRef<number>(0);
   const activeTimersRef = useRef<NodeJS.Timeout[]>([]);
   useEffect(() => {
-    document.title = "F1 REFLEX | Pro Timing Engine";
+    document.title = "F1 REFLEX";
   }, []);
   const [history, setHistory] = useState<Attempt[]>(() => {
     try {
@@ -60,7 +60,6 @@ export function HomePage() {
     const validTimes = history.filter(a => a.time > 0).map(a => a.time);
     return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
   }, [history]);
-  // Unified achievement logic: Beating previous best OR elite sub-200ms on first try
   const isAchievement = useCallback((time: number) => {
     if (time <= 0) return false;
     const isElite = time < 0.200;
@@ -69,7 +68,6 @@ export function HomePage() {
   }, [bestTime, history.length]);
   const startSequence = useCallback(() => {
     clearAllTimers();
-    // Strict ref reset for zero timing carry-over
     lightsOutTimeRef.current = 0;
     setGameState('COUNTDOWN');
     setActiveLights(0);
@@ -81,7 +79,6 @@ export function HomePage() {
       activeTimersRef.current.push(timer);
     }
     const prepareTimer = setTimeout(() => {
-      // Logic for random hold time between 0.2s and 3.0s
       const randomHold = Math.random() * 2800 + 200;
       const holdTimer = setTimeout(() => {
         lightsOutTimeRef.current = performance.now();
@@ -89,7 +86,7 @@ export function HomePage() {
         setActiveLights(0);
       }, randomHold);
       activeTimersRef.current.push(holdTimer);
-    }, 5000); // 5 seconds is when all lights are finally on
+    }, 5000);
     activeTimersRef.current.push(prepareTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent) => {
@@ -166,7 +163,6 @@ export function HomePage() {
       className="min-h-screen bg-neutral-950 flex flex-col items-center scanline touch-none overflow-x-hidden select-none"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
-        // Prevent trigger when clicking interactive elements or statistics log
         if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger]')) return;
         if (['IDLE', 'COUNTDOWN', 'WAITING'].includes(gameState)) {
           handleTrigger();
@@ -174,25 +170,19 @@ export function HomePage() {
       }}
     >
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col flex-1 py-8 md:py-10 lg:py-12">
-        <header className="flex items-center justify-between mb-8 sm:mb-16 border-b border-neutral-800 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-primary p-2 glow-red">
-              <Cpu className="w-8 h-8 text-white" />
+        <header className="flex items-center justify-center mb-10 sm:mb-20 border-b border-neutral-800 pb-8">
+          <div className="flex items-center gap-6">
+            <div className="bg-primary p-2 glow-red transform -skew-x-12">
+              <Cpu className="w-10 h-10 text-white transform skew-x-12" />
             </div>
-            <div className="flex flex-col">
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
-              <span className="text-[10px] text-primary/80 font-bold uppercase tracking-[0.3em] mt-1 ml-1">Professional Timing Engine</span>
-            </div>
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">v2.2.0-FINAL</span>
+            <h1 className="text-4xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
           </div>
         </header>
-        <main className="flex-1 flex flex-col items-center justify-center gap-8 sm:gap-16">
-          <div className="w-full max-w-2xl px-2">
+        <main className="flex-1 flex flex-col items-center justify-center gap-12 sm:gap-20">
+          <div className="w-full">
             <Semaphore lightsActive={activeLights} />
           </div>
-          <div className="text-center h-40 sm:h-64 flex flex-col items-center justify-center w-full">
+          <div className="text-center h-48 sm:h-72 flex flex-col items-center justify-center w-full">
             <AnimatePresence mode="wait">
               {gameState === 'IDLE' && (
                 <motion.div
@@ -200,8 +190,8 @@ export function HomePage() {
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   className="space-y-4"
                 >
-                  <p className="text-neutral-400 font-bold tracking-[0.4em] uppercase text-xs sm:text-base animate-pulse">Tap Screen or Press Space</p>
-                  <p className="text-[10px] text-neutral-600 uppercase tracking-widest">to initiate start procedure</p>
+                  <p className="text-neutral-400 font-bold tracking-[0.5em] uppercase text-sm sm:text-xl animate-pulse">Tap Screen or Press Space</p>
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-widest font-mono">Precision input required</p>
                 </motion.div>
               )}
               {gameState === 'COUNTDOWN' && (
@@ -210,7 +200,7 @@ export function HomePage() {
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   className="flex flex-col items-center"
                 >
-                  <p className="text-neutral-500 font-black text-xl sm:text-2xl tracking-[0.4em] uppercase">STAND BY</p>
+                  <p className="text-neutral-500 font-black text-2xl sm:text-4xl tracking-[0.6em] uppercase">STAND BY</p>
                 </motion.div>
               )}
               {gameState === 'WAITING' && (
@@ -220,32 +210,32 @@ export function HomePage() {
                 <motion.div
                   key="result"
                   initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                  className="flex flex-col items-center gap-4 sm:gap-6 w-full"
+                  className="flex flex-col items-center gap-6 sm:gap-10 w-full"
                 >
                   <div className="relative inline-block">
                     <p className={cn(
-                      "text-4xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tabular-nums tracking-tighter leading-none px-2",
+                      "text-6xl xs:text-8xl sm:text-9xl lg:text-[12rem] font-black tabular-nums tracking-tighter leading-none px-2",
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch' : 'text-accent',
                       lastReaction !== null && isAchievement(lastReaction) && gameState === 'RESULT' && "animate-glitch"
                     )}>
                       {gameState === 'JUMP_START' ? 'JUMP' : `${lastReaction?.toFixed(3)}s`}
                     </p>
                     {lastReaction !== null && isAchievement(lastReaction) && gameState === 'RESULT' && (
-                      <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-8 bg-amber-500 text-black text-[8px] sm:text-[10px] px-2 py-1 font-black uppercase shadow-glow z-20 border border-black transform rotate-12 whitespace-nowrap">
-                        ACHIEVEMENT
+                      <div className="absolute -top-6 -right-6 sm:-top-8 sm:-right-10 bg-amber-500 text-black text-[10px] sm:text-xs px-3 py-1.5 font-black uppercase shadow-glow z-20 border-2 border-black transform rotate-12 whitespace-nowrap">
+                        NEW RECORD
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-center gap-4 sm:gap-6 w-full px-4">
-                    <p className={cn("text-xs sm:text-base font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-center", getPerformanceMessage(lastReaction ?? 0).color)}>
+                  <div className="flex flex-col items-center gap-6 sm:gap-8 w-full px-4">
+                    <p className={cn("text-sm sm:text-xl font-bold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-center", getPerformanceMessage(lastReaction ?? 0).color)}>
                       {getPerformanceMessage(lastReaction ?? 0).label}
                     </p>
                     <Button
                       onClick={resetToIdle}
-                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.2em] px-6 sm:px-10 py-5 sm:py-6 rounded-none glow-red h-auto text-base sm:text-lg group w-full sm:w-auto"
+                      className="bg-primary hover:bg-red-600 text-white font-black uppercase tracking-[0.3em] px-8 sm:px-14 py-6 sm:py-8 rounded-none glow-red h-auto text-lg sm:text-2xl group w-full sm:w-auto"
                     >
-                      <RotateCcw className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-500" />
-                      Retry
+                      <RotateCcw className="w-6 h-6 sm:w-8 sm:h-8 mr-4 group-hover:rotate-180 transition-transform duration-500" />
+                      Restart
                     </Button>
                   </div>
                 </motion.div>
@@ -253,23 +243,23 @@ export function HomePage() {
             </AnimatePresence>
           </div>
         </main>
-        <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
-          <RetroCard title="Session Stats">
+        <div className="mt-12 sm:mt-24 grid grid-cols-1 md:grid-cols-3 gap-6" data-no-trigger="true">
+          <RetroCard title="Session Analytics">
             <div className="space-y-4">
-              <div className="flex justify-between items-center bg-neutral-950/50 p-3 border border-neutral-800/50">
+              <div className="flex justify-between items-center bg-neutral-950/50 p-4 border border-neutral-800/50">
                 <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2">
-                  <Star className="w-3 h-3 text-amber-500" /> Personal Best
+                  <Star className="w-3 h-3 text-amber-500" /> Best
                 </span>
                 <span className={cn(
-                  "font-mono text-lg sm:text-xl font-black tracking-tight",
+                  "font-mono text-xl font-black tracking-tight",
                   bestTime === Infinity ? "text-neutral-800" : (bestTime <= 0.220 ? "text-accent" : "text-white")
                 )}>
                   {bestTime === Infinity ? '--.---' : `${bestTime.toFixed(3)}s`}
                 </span>
               </div>
-              <div className="flex justify-between items-center px-3">
+              <div className="flex justify-between items-center px-4">
                 <span className="text-neutral-500 text-[10px] uppercase flex items-center gap-2">
-                  <Timer className="w-3 h-3 text-blue-500" /> Valid Average
+                  <Timer className="w-3 h-3 text-blue-500" /> Average
                 </span>
                 <span className="text-white font-mono font-bold text-sm">
                   {validAverage > 0 ? validAverage.toFixed(3) : '0.000'}s
@@ -282,15 +272,15 @@ export function HomePage() {
                   className="w-full border-neutral-800 bg-neutral-900/50 text-neutral-600 hover:text-red-500 hover:border-red-900/50 transition-all uppercase text-[10px] tracking-[0.2em] h-10 rounded-none"
                   onClick={clearData}
                 >
-                  Reset History
+                  Purge Buffer
                 </Button>
               </div>
             </div>
           </RetroCard>
-          <RetroCard title="Pro Benchmarks">
+          <RetroCard title="Hall of Fame">
             <div className="space-y-2">
               {PRO_BENCHMARKS.map((pro, idx) => (
-                <div key={idx} className="flex justify-between items-center text-[11px] font-mono py-1 border-b border-neutral-800/30 last:border-0">
+                <div key={idx} className="flex justify-between items-center text-[11px] font-mono py-1.5 border-b border-neutral-800/30 last:border-0">
                   <div className="flex flex-col">
                     <span className="text-neutral-200 font-bold uppercase">{pro.name}</span>
                     <span className="text-[9px] text-neutral-600 uppercase tracking-tighter">{pro.label}</span>
@@ -310,12 +300,12 @@ export function HomePage() {
               ))}
             </div>
           </RetroCard>
-          <RetroCard title="Telemetry Log">
+          <RetroCard title="Data Stream">
             <ScrollArea className="h-44 pr-4">
               <div className="space-y-3">
                 {history.length === 0 ? (
                   <div className="h-32 flex items-center justify-center text-neutral-700 text-[10px] uppercase font-bold tracking-widest">
-                    Empty Buffer
+                    Wait for signal...
                   </div>
                 ) : (
                   history.map((attempt, idx) => (

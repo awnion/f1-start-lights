@@ -5,36 +5,36 @@ interface SemaphoreProps {
 }
 export function Semaphore({ lightsActive }: SemaphoreProps) {
   return (
-    <div className="flex flex-row items-center justify-center gap-1.5 xs:gap-3 sm:gap-6 p-3 sm:p-8 bg-neutral-900/80 border-y-4 border-neutral-800 shadow-2xl relative overflow-hidden">
+    <div className="w-full flex flex-row items-center justify-center gap-2 xs:gap-4 sm:gap-8 md:gap-12 lg:gap-16 p-4 sm:p-10 md:p-14 bg-neutral-900/90 border-y-4 border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
       {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex flex-col gap-1 sm:gap-2">
-          {/* Light Pod - Explicitly set transition-none to avoid inherited delays */}
-          <div className="w-8 xs:w-10 sm:w-16 h-20 xs:h-24 sm:h-32 bg-neutral-950 rounded-sm sm:rounded-md border border-neutral-800 flex flex-col items-center justify-around py-1 sm:py-2 shadow-inner transition-none">
+        <div key={i} className="flex flex-col gap-2 sm:gap-4">
+          {/* Light Pod - Expanded dimensions for high-fidelity impact */}
+          <div className="w-10 xs:w-14 sm:w-20 md:w-28 lg:w-32 h-24 xs:h-32 sm:h-44 md:h-56 lg:h-64 bg-neutral-950 rounded-sm sm:rounded-lg border-2 border-neutral-800 flex flex-col items-center justify-around py-2 sm:py-4 shadow-inner transition-none">
             {/* Top Light */}
             <div
               className={cn(
-                "w-5 h-5 xs:w-7 xs:h-7 sm:w-12 sm:h-12 rounded-full transition-none",
+                "w-7 h-7 xs:w-10 xs:h-10 sm:w-16 sm:h-16 md:w-20 md:w-20 lg:w-24 lg:h-24 rounded-full transition-none",
                 i < lightsActive
-                  ? "bg-red-600 glow-red border-red-400 border"
-                  : "bg-neutral-900 border-neutral-800 border shadow-none"
+                  ? "bg-red-600 glow-red border-red-400 border-2"
+                  : "bg-neutral-900 border-neutral-800 border-2 shadow-none"
               )}
             />
             {/* Bottom Light */}
             <div
               className={cn(
-                "w-5 h-5 xs:w-7 xs:h-7 sm:w-12 sm:h-12 rounded-full transition-none",
+                "w-7 h-7 xs:w-10 xs:h-10 sm:w-16 sm:h-16 md:w-20 md:w-20 lg:w-24 lg:h-24 rounded-full transition-none",
                 i < lightsActive
-                  ? "bg-red-600 glow-red border-red-400 border"
-                  : "bg-neutral-900 border-neutral-800 border shadow-none"
+                  ? "bg-red-600 glow-red border-red-400 border-2"
+                  : "bg-neutral-900 border-neutral-800 border-2 shadow-none"
               )}
             />
           </div>
           {/* Connector Rod Base */}
-          <div className="h-3 sm:h-4 w-1 sm:w-2 bg-neutral-800 mx-auto rounded-b" />
+          <div className="h-4 sm:h-6 w-2 sm:w-3 bg-neutral-800 mx-auto rounded-b" />
         </div>
       ))}
-      {/* Decorative vertical grid overlay - tuned for optimal contrast */}
-      <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(90deg,transparent_95%,rgba(255,255,255,0.1)_100%)] bg-[length:15px_100%] sm:bg-[length:20px_100%]" />
+      {/* Decorative vertical grid overlay - re-scaled for the larger gantry */}
+      <div className="absolute inset-0 opacity-[0.08] pointer-events-none bg-[linear-gradient(90deg,transparent_95%,rgba(255,255,255,0.1)_100%)] bg-[length:30px_100%] sm:bg-[length:40px_100%]" />
     </div>
   );
 }
