@@ -76,7 +76,7 @@ export function HomePage() {
       activeTimersRef.current.push(timer);
     }
     const prepareTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200; 
+      const randomHold = Math.random() * 2800 + 200;
       const holdTimer = window.setTimeout(() => {
         lightsOutTimeRef.current = performance.now();
         setGameState('WAITING');
@@ -113,7 +113,6 @@ export function HomePage() {
     if (gameState === 'WAITING') {
       processingRef.current = true;
       const reaction = (now - lightsOutTimeRef.current) / 1000;
-      // Determine achievement before updating history
       const isNewPB = history.length === 0 || (reaction > 0 && reaction < bestTime);
       const isElite = reaction > 0 && reaction < 0.200;
       setLastReaction(reaction);
@@ -132,7 +131,6 @@ export function HomePage() {
   }, [gameState, startSequence, clearAllTimers, history, bestTime]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Logic guards for keys
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
         handleTrigger();
@@ -178,13 +176,6 @@ export function HomePage() {
             </div>
             <h1 className="text-2xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
           </div>
-          <div className="hidden sm:flex flex-col items-end gap-1">
-             <div className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Protocol Status</div>
-             <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                <span className="text-xs text-accent font-mono">LINK_ACTIVE</span>
-             </div>
-          </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
           <div className="w-full">
@@ -209,14 +200,6 @@ export function HomePage() {
                   className="flex flex-col items-center"
                 >
                   <p className="text-neutral-500 font-black text-xl sm:text-4xl tracking-[0.6em] uppercase">STAND BY</p>
-                  <div className="mt-4 w-32 h-1 bg-neutral-900 overflow-hidden relative">
-                    <motion.div 
-                       className="absolute inset-0 bg-primary"
-                       initial={{ width: "0%" }}
-                       animate={{ width: "100%" }}
-                       transition={{ duration: 5, ease: "linear" }}
-                    />
-                  </div>
                 </motion.div>
               )}
               {gameState === 'WAITING' && (
@@ -359,7 +342,6 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
-      {/* Decorative CRT scanline effect layer */}
       <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
     </div>
   );
