@@ -32,7 +32,7 @@ export function HomePage() {
   const processingRef = useRef<boolean>(false);
   const lastActionTimeRef = useRef<number>(0);
   useEffect(() => {
-    document.title = "F1 REFLEX";
+    document.title = "F1 START LIGHTS";
   }, []);
   const [history, setHistory] = useState<Attempt[]>(() => {
     try {
@@ -118,7 +118,7 @@ export function HomePage() {
     }
     if (gameState === 'RESULT' || gameState === 'JUMP_START') {
       // Cooldown to ensure users see their time before accidentally restarting
-      if (now - lastActionTimeRef.current < RESULT_COOLDOWN_MS) return; 
+      if (now - lastActionTimeRef.current < RESULT_COOLDOWN_MS) return;
       startSequence();
       return;
     }
@@ -186,7 +186,6 @@ export function HomePage() {
       className="min-h-screen bg-neutral-950 flex flex-col items-center touch-none overflow-x-hidden select-none relative"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
-        // Don't trigger if user clicks buttons or cards
         if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger="true"]')) return;
         handleTrigger();
       }}
@@ -197,7 +196,7 @@ export function HomePage() {
             <div className="bg-primary p-2 glow-red transform -skew-x-12">
               <Cpu className="w-6 h-6 sm:w-10 sm:h-10 text-white transform skew-x-12" />
             </div>
-            <h1 className="text-3xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 REFLEX</h1>
+            <h1 className="text-3xl sm:text-6xl font-black tracking-tighter text-white italic leading-none uppercase">F1 START LIGHTS</h1>
           </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
