@@ -14,14 +14,7 @@ export function Semaphore({ lightsActive }: SemaphoreProps) {
           <div className="w-full aspect-[4/9] min-h-[120px] sm:min-h-[160px] bg-neutral-950 rounded-sm sm:rounded-md border-2 border-neutral-800 flex flex-col items-center justify-center gap-4 py-4 shadow-[inset_0_0_25px_rgba(0,0,0,1)] relative overflow-hidden">
             {/* Top Light Unit */}
             <div className="w-[70%] relative z-10">
-              <div
-                className={cn(
-                  "w-full aspect-square rounded-full transition-none", 
-                  i < lightsActive
-                    ? "bg-red-600 shadow-[0_0_25px_#ff0033,0_0_50px_#ff0033] border-red-400 border-2"
-                    : "bg-neutral-900 border-neutral-800 border-2 shadow-none"
-                )}
-              >
+              <div className="w-full aspect-square rounded-full transition-none bg-neutral-900 border-neutral-800 border-2 shadow-none">
                 <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15)_0%,transparent_70%)] opacity-50" />
               </div>
             </div>
