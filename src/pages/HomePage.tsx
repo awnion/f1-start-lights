@@ -10,7 +10,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 const STORAGE_KEY = 'f1_start_lights_v1';
 const INPUT_DEBOUNCE_MS = 150;
 const RESULT_COOLDOWN_MS = 600;
-// CRITICAL F1 RULE: Top row ALWAYS off/black—no red/glow. Bottom only active (i < lightsActive). Never change top.
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
@@ -67,7 +66,6 @@ export function HomePage() {
     const validTimes = history.filter(a => a.time > 0).map(a => a.time);
     return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
   }, [history]);
-  // Derived Top 5 Leaderboard
   const topTimes = useMemo(() => {
     return history
       .filter(a => a.time > 0)
@@ -202,13 +200,6 @@ export function HomePage() {
               F1 START LIGHTS
             </h1>
           </div>
-          <div className="hidden sm:flex flex-col items-end gap-1">
-            <div className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">System Status</div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-              <span className="text-[10px] text-neutral-400 font-mono">READY_FOR_START</span>
-            </div>
-          </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
           <div className="w-full flex justify-center items-start">
@@ -266,7 +257,7 @@ export function HomePage() {
                   </div>
                   <div className="flex flex-col items-center gap-3 sm:gap-5 w-full px-4" data-no-trigger="true">
                     {gameState !== 'JUMP_START' && (
-                      <p className={cn("text-[10px] sm:text-lg font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-center", getPerformanceMessage(lastReaction ?? 0).color)}>
+                      <p className={cn("text-sm sm:text-xl font-black uppercase tracking-[0.25em] sm:tracking-[0.4em] text-center", getPerformanceMessage(lastReaction ?? 0).color)}>
                         {getPerformanceMessage(lastReaction ?? 0).label}
                       </p>
                     )}
@@ -285,16 +276,16 @@ export function HomePage() {
         </main>
         <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-2 gap-6" data-no-trigger="true">
           <RetroCard title="F1 Drivers Benchmarks">
-            <div className="space-y-2">
+            <div className="space-y-3">
               {PRO_BENCHMARKS.map((pro, idx) => (
-                <div key={idx} className="flex justify-between items-center py-2 border-b border-neutral-800/30 last:border-0">
+                <div key={idx} className="flex justify-between items-center py-3 border-b border-neutral-800/30 last:border-0">
                   <div className="flex flex-col">
-                    <span className="text-neutral-200 font-bold uppercase text-sm">{pro.name}</span>
+                    <span className="text-neutral-200 font-bold uppercase text-base">{pro.name}</span>
                     <span className="text-[10px] text-neutral-600 uppercase tracking-tighter">{pro.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={cn(
-                      "font-black tabular-nums font-mono text-sm",
+                      "font-black tabular-nums font-mono text-base",
                       bestTime <= pro.time ? "text-accent" : "text-neutral-600"
                     )}>
                       {pro.time.toFixed(3)}s
@@ -306,27 +297,27 @@ export function HomePage() {
             </div>
           </RetroCard>
           <RetroCard title="Personal Leaderboard (Top 5)">
-            <ScrollArea className="h-[260px] pr-4">
+            <ScrollArea className="h-[300px] pr-4">
               <div className="space-y-4">
                 {topTimes.length === 0 ? (
-                  <div className="h-40 flex flex-col items-center justify-center text-neutral-800 gap-3">
-                    <Trophy className="w-8 h-8 opacity-20" />
+                  <div className="h-48 flex flex-col items-center justify-center text-neutral-800 gap-3">
+                    <Trophy className="w-10 h-10 opacity-20" />
                     <p className="text-xs uppercase font-bold tracking-[0.3em]">No data recorded</p>
                   </div>
                 ) : (
                   topTimes.map((attempt, idx) => {
                     const perf = getPerformanceMessage(attempt.time);
                     return (
-                      <div key={attempt.id} className="flex items-center justify-between font-mono border-b border-neutral-800/30 pb-4 last:border-0">
-                        <div className="flex items-center gap-3">
+                      <div key={attempt.id} className="flex items-center justify-between font-mono border-b border-neutral-800/30 pb-5 last:border-0">
+                        <div className="flex items-center gap-4">
                           <span className={cn(
-                            "text-lg font-black italic w-8",
+                            "text-xl font-black italic w-8",
                             idx === 0 ? "text-amber-500" : "text-neutral-700"
                           )}>
                             #{idx + 1}
                           </span>
                           <div className="flex flex-col">
-                            <span className={cn("font-bold text-xs uppercase tracking-widest", perf.color)}>
+                            <span className={cn("font-bold text-sm uppercase tracking-widest", perf.color)}>
                               {perf.label}
                             </span>
                             <span className="text-[10px] text-neutral-600 uppercase">
@@ -336,12 +327,12 @@ export function HomePage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className={cn(
-                            "font-black tabular-nums text-lg",
+                            "font-black tabular-nums text-xl",
                             idx === 0 ? "text-accent" : "text-white"
                           )}>
                             {attempt.time.toFixed(3)}s
                           </span>
-                          {idx === 0 && <Star className="w-4 h-4 text-amber-500 fill-amber-500" />}
+                          {idx === 0 && <Star className="w-5 h-5 text-amber-500 fill-amber-500" />}
                         </div>
                       </div>
                     );
@@ -352,7 +343,6 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
-      {/* Screen Overlays */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.2),rgba(0,255,0,0.1),rgba(0,0,255,0.2))] bg-[length:100%_4px,3px_100%]" />
         <div className="absolute inset-0 opacity-[0.01] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
