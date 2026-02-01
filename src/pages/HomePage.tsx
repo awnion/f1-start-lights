@@ -44,27 +44,30 @@ export function HomePage() {
       setIsPersisting(false);
     }
   }, [history]);
-  // High precision timing refs
+  // High precision timing and timer lifecycle management
   const lightsOutTimeRef = useRef<number>(0);
-  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const randomHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const activeTimersRef = useRef<NodeJS.Timeout[]>([]);
+  const clearAllTimers = useCallback(() => {
+    activeTimersRef.current.forEach(timer => clearTimeout(timer));
+    activeTimersRef.current = [];
+  }, []);
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => clearAllTimers();
+  }, [clearAllTimers]);
   const bestTime = useMemo(() => {
     const validTimes = history.filter(a => a.time > 0).map(a => a.time);
     return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
   }, [history]);
   const isNewBest = lastReaction !== null && lastReaction > 0 && lastReaction <= bestTime;
-  const resetTimers = () => {
-    if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
-    if (randomHoldTimerRef.current) clearTimeout(randomHoldTimerRef.current);
-  };
   const startSequence = useCallback(() => {
-    resetTimers();
+    clearAllTimers();
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
     // Light up pairs one by one (1s intervals)
     for (let i = 1; i <= 5; i++) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setGameState(prev => {
           if (prev === 'COUNTDOWN') {
             setActiveLights(i);
@@ -73,29 +76,32 @@ export function HomePage() {
           return prev;
         });
       }, i * 1000);
+      activeTimersRef.current.push(timer);
     }
     // After all 5 lights are on, wait random time
-    setTimeout(() => {
+    const finalLightTimer = setTimeout(() => {
       setGameState(prev => {
         if (prev === 'COUNTDOWN') {
-          const randomHold = Math.random() * 2800 + 200;
-          randomHoldTimerRef.current = setTimeout(() => {
+          const randomHold = Math.random() * 2800 + 400; // Increased min hold slightly for tension
+          const holdTimer = setTimeout(() => {
             lightsOutTimeRef.current = performance.now();
             setGameState('WAITING');
             setActiveLights(0);
           }, randomHold);
+          activeTimersRef.current.push(holdTimer);
           return 'COUNTDOWN';
         }
         return prev;
       });
     }, 5000);
-  }, []);
+    activeTimersRef.current.push(finalLightTimer);
+  }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
     if (gameState === 'IDLE' || gameState === 'RESULT' || gameState === 'JUMP_START') {
       startSequence();
     } else if (gameState === 'COUNTDOWN') {
-      resetTimers();
+      clearAllTimers();
       setGameState('JUMP_START');
       setLastReaction(0);
       setHistory(prev => [{ id: crypto.randomUUID(), time: 0, timestamp: Date.now() }, ...prev].slice(0, 10));
@@ -103,17 +109,17 @@ export function HomePage() {
       const reaction = (now - lightsOutTimeRef.current) / 1000;
       setLastReaction(reaction);
       setGameState('RESULT');
-      if (reaction < bestTime) {
+      if (reaction <= bestTime) {
         confetti({
-          particleCount: 100,
-          spread: 70,
+          particleCount: 150,
+          spread: 80,
           origin: { y: 0.6 },
-          colors: ['#ff0033', '#39ff14', '#ffffff']
+          colors: ['#ff0033', '#39ff14', '#ffffff', '#ffd700']
         });
       }
       setHistory(prev => [{ id: crypto.randomUUID(), time: reaction, timestamp: Date.now() }, ...prev].slice(0, 10));
     }
-  }, [gameState, startSequence, bestTime]);
+  }, [gameState, startSequence, clearAllTimers, bestTime]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
@@ -168,10 +174,10 @@ export function HomePage() {
           <div className="w-full max-w-2xl transform scale-90 sm:scale-100">
             <Semaphore lightsActive={activeLights} />
           </div>
-          <div className="text-center h-24 sm:h-32 flex flex-col items-center justify-center">
+          <div className="text-center h-32 sm:h-40 flex flex-col items-center justify-center">
             <AnimatePresence mode="wait">
               {gameState === 'IDLE' && (
-                <motion.div 
+                <motion.div
                   key="idle"
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="animate-pulse space-y-2"
@@ -181,7 +187,7 @@ export function HomePage() {
                 </motion.div>
               )}
               {gameState === 'COUNTDOWN' && (
-                <motion.p 
+                <motion.p
                   key="countdown"
                   initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                   className="text-red-600 font-black text-xl sm:text-2xl tracking-[0.3em] uppercase glow-red/50"
@@ -190,36 +196,38 @@ export function HomePage() {
                 </motion.p>
               )}
               {gameState === 'WAITING' && (
-                <motion.p 
+                <motion.p
                   key="waiting"
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="text-neutral-200 font-black text-2xl sm:text-3xl tracking-[0.1em] uppercase"
+                  className="text-neutral-200 font-black text-2xl sm:text-4xl tracking-[0.1em] uppercase"
                 >
                   WAIT FOR LIGHTS OUT...
                 </motion.p>
               )}
               {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
-                <motion.div 
+                <motion.div
                   key="result"
                   initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
                   className="space-y-1"
                 >
                   <div className="relative inline-block">
-                    <p className={cn("text-4xl sm:text-6xl font-black tabular-nums tracking-tighter",
-                      gameState === 'JUMP_START' ? 'text-red-500' : 'text-emerald-400'
+                    <p className={cn(
+                      "text-5xl sm:text-7xl font-black tabular-nums tracking-tighter",
+                      gameState === 'JUMP_START' ? 'text-red-500' : 'text-emerald-400',
+                      isNewBest && history.length > 1 && "animate-glitch"
                     )}>
                       {gameState === 'JUMP_START' ? 'JUMP START' : `${lastReaction?.toFixed(3)}s`}
                     </p>
                     {isNewBest && (
-                      <motion.div 
+                      <motion.div
                         initial={{ scale: 0 }} animate={{ scale: 1 }}
-                        className="absolute -top-4 -right-8 bg-amber-500 text-black text-[10px] px-2 py-0.5 font-black uppercase rotate-12 shadow-glow"
+                        className="absolute -top-6 -right-12 bg-amber-500 text-black text-[10px] px-2 py-0.5 font-black uppercase rotate-12 shadow-glow z-20"
                       >
                         NEW BEST
                       </motion.div>
                     )}
                   </div>
-                  <p className={cn("text-xs font-bold uppercase tracking-widest", getPerformanceMessage(lastReaction ?? 0).color)}>
+                  <p className={cn("text-sm font-bold uppercase tracking-widest mt-2", getPerformanceMessage(lastReaction ?? 0).color)}>
                     {getPerformanceMessage(lastReaction ?? 0).label}
                   </p>
                 </motion.div>
@@ -269,8 +277,8 @@ export function HomePage() {
                   </div>
                 ) : (
                   history.map((attempt, idx) => (
-                    <motion.div 
-                      key={attempt.id} 
+                    <motion.div
+                      key={attempt.id}
                       initial={{ x: -10, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}
                       className="flex items-center justify-between text-xs font-mono border-b border-neutral-800/50 pb-1.5 last:border-0"
@@ -283,7 +291,7 @@ export function HomePage() {
                           </span>
                         ) : (
                           <span className={cn("flex items-center gap-1", attempt.time <= bestTime && history.length > 1 ? "text-emerald-400 font-bold" : "text-neutral-300")}>
-                            <Zap className={cn("w-3 h-3", attempt.time <= bestTime && history.length > 1 ? "text-amber-500" : "text-emerald-500")} /> 
+                            <Zap className={cn("w-3 h-3", attempt.time <= bestTime && history.length > 1 ? "text-amber-500" : "text-emerald-500")} />
                             {attempt.time.toFixed(3)}s {attempt.time <= bestTime && history.length > 1 && "[PB]"}
                           </span>
                         )}
