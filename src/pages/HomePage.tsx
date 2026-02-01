@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Timer, Trophy, RotateCcw, Zap, AlertTriangle, Cpu } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Timer, Trophy, RotateCcw, Zap, AlertTriangle, Cpu, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import { cn } from '@/lib/utils';
 import { Semaphore } from '@/components/Semaphore';
 import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+const STORAGE_KEY = 'f1_reflex_history_v1';
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
@@ -15,14 +18,41 @@ export function HomePage() {
   const [gameState, setGameState] = useState<GameState>('IDLE');
   const [activeLights, setActiveLights] = useState(0);
   const [lastReaction, setLastReaction] = useState<number | null>(null);
-  const [history, setHistory] = useState<Attempt[]>([]);
+  const [isPersisting, setIsPersisting] = useState(false);
+  // Initialize history from localStorage with safety checks
+  const [history, setHistory] = useState<Attempt[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed.slice(0, 10) : [];
+      }
+    } catch (e) {
+      console.error("Failed to load telemetry history:", e);
+    }
+    return [];
+  });
+  // Persist history whenever it changes
+  useEffect(() => {
+    try {
+      setIsPersisting(true);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      const timeout = setTimeout(() => setIsPersisting(false), 500);
+      return () => clearTimeout(timeout);
+    } catch (e) {
+      console.error("Failed to save telemetry history:", e);
+      setIsPersisting(false);
+    }
+  }, [history]);
   // High precision timing refs
   const lightsOutTimeRef = useRef<number>(0);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const randomHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const bestTime = history.length > 0 
-    ? Math.min(...history.filter(a => a.time > 0).map(a => a.time)) 
-    : Infinity;
+  const bestTime = useMemo(() => {
+    const validTimes = history.filter(a => a.time > 0).map(a => a.time);
+    return validTimes.length > 0 ? Math.min(...validTimes) : Infinity;
+  }, [history]);
+  const isNewBest = lastReaction !== null && lastReaction > 0 && lastReaction <= bestTime;
   const resetTimers = () => {
     if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
     if (randomHoldTimerRef.current) clearTimeout(randomHoldTimerRef.current);
@@ -44,7 +74,7 @@ export function HomePage() {
         });
       }, i * 1000);
     }
-    // After all 5 lights are on, wait random time between 0.2s and 3.0s
+    // After all 5 lights are on, wait random time
     setTimeout(() => {
       setGameState(prev => {
         if (prev === 'COUNTDOWN') {
@@ -65,7 +95,6 @@ export function HomePage() {
     if (gameState === 'IDLE' || gameState === 'RESULT' || gameState === 'JUMP_START') {
       startSequence();
     } else if (gameState === 'COUNTDOWN') {
-      // Jump start!
       resetTimers();
       setGameState('JUMP_START');
       setLastReaction(0);
@@ -74,9 +103,17 @@ export function HomePage() {
       const reaction = (now - lightsOutTimeRef.current) / 1000;
       setLastReaction(reaction);
       setGameState('RESULT');
+      if (reaction < bestTime) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#ff0033', '#39ff14', '#ffffff']
+        });
+      }
       setHistory(prev => [{ id: crypto.randomUUID(), time: reaction, timestamp: Date.now() }, ...prev].slice(0, 10));
     }
-  }, [gameState, startSequence]);
+  }, [gameState, startSequence, bestTime]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
@@ -94,17 +131,20 @@ export function HomePage() {
     if (time < 0.300) return { label: 'EXCELLENT', color: 'text-blue-400' };
     return { label: 'COULD BE BETTER', color: 'text-neutral-400' };
   };
+  const clearData = () => {
+    setHistory([]);
+    localStorage.removeItem(STORAGE_KEY);
+    setLastReaction(null);
+  };
   return (
-    <div 
+    <div
       className="min-h-screen bg-neutral-950 flex flex-col items-center scanline touch-none overflow-hidden"
       onPointerDown={(e) => {
-        // Prevent trigger on scrollbars or UI elements if needed, but here we want full screen
         if ((e.target as HTMLElement).closest('button')) return;
         handleTrigger();
       }}
     >
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col flex-1 py-8 md:py-12">
-        {/* Header */}
         <header className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-12 border-b border-neutral-800 pb-4">
           <div className="flex items-center gap-3">
             <div className="bg-red-600 p-1.5 glow-red">
@@ -112,104 +152,146 @@ export function HomePage() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-white italic">F1 REFLEX <span className="text-red-600">RETRO</span></h1>
-              <p className="text-[10px] text-neutral-500 font-mono tracking-[0.2em] uppercase">Telemetry System v1.0.4</p>
+              <p className="text-[10px] text-neutral-500 font-mono tracking-[0.2em] uppercase">Telemetry System v1.1.0_PRO</p>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-4 text-xs font-mono">
             <div className="flex items-center gap-2 text-neutral-500">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              STATION_READY
+              <div className={cn("w-2 h-2 rounded-full", isPersisting ? "bg-amber-500 animate-pulse" : "bg-emerald-500")} />
+              {isPersisting ? 'SYNCING_DATA' : 'STATION_READY'}
             </div>
             <div className="text-neutral-700">|</div>
-            <div className="text-neutral-400">LATENCY: 1.2ms</div>
+            <div className="text-neutral-400 uppercase">Buffer: {history.length}/10</div>
           </div>
         </header>
-        {/* Center Stage: Semaphore */}
         <main className="flex-1 flex flex-col items-center justify-center gap-8">
           <div className="w-full max-w-2xl transform scale-90 sm:scale-100">
             <Semaphore lightsActive={activeLights} />
           </div>
           <div className="text-center h-24 sm:h-32 flex flex-col items-center justify-center">
-            {gameState === 'IDLE' && (
-              <div className="animate-pulse space-y-2">
-                <p className="text-neutral-400 font-bold tracking-widest uppercase">Tap Screen or Press Space</p>
-                <p className="text-xs text-neutral-600 uppercase">to start ignition sequence</p>
-              </div>
-            )}
-            {gameState === 'COUNTDOWN' && (
-              <p className="text-red-600 font-black text-xl sm:text-2xl tracking-[0.3em] uppercase glow-red/50">Prepare for Start</p>
-            )}
-            {gameState === 'WAITING' && (
-              <p className="text-neutral-200 font-black text-2xl sm:text-3xl tracking-[0.1em] uppercase">WAIT FOR LIGHTS OUT...</p>
-            )}
-            {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
-              <div className="space-y-1 animate-in fade-in zoom-in duration-300">
-                <p className={cn("text-3xl sm:text-5xl font-black tabular-nums", 
-                  gameState === 'JUMP_START' ? 'text-red-500' : 'text-emerald-400'
-                )}>
-                  {gameState === 'JUMP_START' ? 'JUMP START' : `${lastReaction?.toFixed(3)}s`}
-                </p>
-                <p className={cn("text-xs font-bold uppercase tracking-widest", getPerformanceMessage(lastReaction ?? 0).color)}>
-                  {getPerformanceMessage(lastReaction ?? 0).label}
-                </p>
-              </div>
-            )}
+            <AnimatePresence mode="wait">
+              {gameState === 'IDLE' && (
+                <motion.div 
+                  key="idle"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="animate-pulse space-y-2"
+                >
+                  <p className="text-neutral-400 font-bold tracking-widest uppercase">Tap Screen or Press Space</p>
+                  <p className="text-xs text-neutral-600 uppercase">to start ignition sequence</p>
+                </motion.div>
+              )}
+              {gameState === 'COUNTDOWN' && (
+                <motion.p 
+                  key="countdown"
+                  initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                  className="text-red-600 font-black text-xl sm:text-2xl tracking-[0.3em] uppercase glow-red/50"
+                >
+                  Prepare for Start
+                </motion.p>
+              )}
+              {gameState === 'WAITING' && (
+                <motion.p 
+                  key="waiting"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="text-neutral-200 font-black text-2xl sm:text-3xl tracking-[0.1em] uppercase"
+                >
+                  WAIT FOR LIGHTS OUT...
+                </motion.p>
+              )}
+              {(gameState === 'RESULT' || gameState === 'JUMP_START') && (
+                <motion.div 
+                  key="result"
+                  initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                  className="space-y-1"
+                >
+                  <div className="relative inline-block">
+                    <p className={cn("text-4xl sm:text-6xl font-black tabular-nums tracking-tighter",
+                      gameState === 'JUMP_START' ? 'text-red-500' : 'text-emerald-400'
+                    )}>
+                      {gameState === 'JUMP_START' ? 'JUMP START' : `${lastReaction?.toFixed(3)}s`}
+                    </p>
+                    {isNewBest && (
+                      <motion.div 
+                        initial={{ scale: 0 }} animate={{ scale: 1 }}
+                        className="absolute -top-4 -right-8 bg-amber-500 text-black text-[10px] px-2 py-0.5 font-black uppercase rotate-12 shadow-glow"
+                      >
+                        NEW BEST
+                      </motion.div>
+                    )}
+                  </div>
+                  <p className={cn("text-xs font-bold uppercase tracking-widest", getPerformanceMessage(lastReaction ?? 0).color)}>
+                    {getPerformanceMessage(lastReaction ?? 0).label}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </main>
-        {/* Footer: Dashboard */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <RetroCard title="Sessional Stats" className="md:col-span-1">
+          <RetroCard title="Sessional Stats" isSyncing={isPersisting} className="md:col-span-1">
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-xs uppercase">Personal Best</span>
-                <span className="text-emerald-400 font-mono text-lg font-bold">
+              <div className="flex justify-between items-center group">
+                <span className="text-neutral-500 text-xs uppercase flex items-center gap-1">
+                  <Star className="w-3 h-3" /> Personal Best
+                </span>
+                <span className={cn(
+                  "font-mono text-lg font-bold transition-all duration-500",
+                  bestTime === Infinity ? "text-neutral-700" : "text-emerald-400 glow-green"
+                )}>
                   {bestTime === Infinity ? '--.---' : `${bestTime.toFixed(3)}s`}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-neutral-500 text-xs uppercase">Avg. Reaction</span>
                 <span className="text-white font-mono">
-                  {history.length > 0 
-                    ? (history.filter(a => a.time > 0).reduce((acc, curr) => acc + curr.time, 0) / Math.max(1, history.filter(a => a.time > 0).length)).toFixed(3) 
+                  {history.length > 0
+                    ? (history.filter(a => a.time > 0).reduce((acc, curr) => acc + curr.time, 0) / Math.max(1, history.filter(a => a.time > 0).length)).toFixed(3)
                     : '0.000'}s
                 </span>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full border-neutral-800 text-neutral-400 hover:text-white"
-                onClick={() => setHistory([])}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-neutral-800 text-neutral-500 hover:text-red-500 hover:border-red-900 transition-colors uppercase text-[10px] tracking-widest"
+                onClick={clearData}
               >
-                <RotateCcw className="w-3 h-3 mr-2" /> Reset Data
+                <RotateCcw className="w-3 h-3 mr-2" /> Purge Local Telemetry
               </Button>
             </div>
           </RetroCard>
-          <RetroCard title="Live Feed" className="md:col-span-2">
-            <ScrollArea className="h-32">
+          <RetroCard title="Live Feed" isSyncing={isPersisting} className="md:col-span-2">
+            <ScrollArea className="h-32 pr-4">
               <div className="space-y-2">
                 {history.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-neutral-700 text-xs uppercase italic py-4">
+                  <div className="h-full flex flex-col items-center justify-center text-neutral-700 text-xs uppercase italic py-8 gap-2">
+                    <Cpu className="w-4 h-4 opacity-20" />
                     Waiting for telemetry data...
                   </div>
                 ) : (
                   history.map((attempt, idx) => (
-                    <div key={attempt.id} className="flex items-center justify-between text-xs font-mono border-b border-neutral-800/50 pb-1 last:border-0">
+                    <motion.div 
+                      key={attempt.id} 
+                      initial={{ x: -10, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      className="flex items-center justify-between text-xs font-mono border-b border-neutral-800/50 pb-1.5 last:border-0"
+                    >
                       <div className="flex items-center gap-3">
-                        <span className="text-neutral-600">#{history.length - idx}</span>
+                        <span className="text-neutral-600 w-6">#{history.length - idx}</span>
                         {attempt.time === 0 ? (
-                          <span className="text-red-500 flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" /> DISQUALIFIED (FALSE START)
+                          <span className="text-red-500 flex items-center gap-1 font-bold">
+                            <AlertTriangle className="w-3 h-3" /> FALSE_START
                           </span>
                         ) : (
-                          <span className="text-neutral-300 flex items-center gap-1">
-                            <Zap className="w-3 h-3 text-emerald-500" /> REACTION: {attempt.time.toFixed(3)}s
+                          <span className={cn("flex items-center gap-1", attempt.time <= bestTime && history.length > 1 ? "text-emerald-400 font-bold" : "text-neutral-300")}>
+                            <Zap className={cn("w-3 h-3", attempt.time <= bestTime && history.length > 1 ? "text-amber-500" : "text-emerald-500")} /> 
+                            {attempt.time.toFixed(3)}s {attempt.time <= bestTime && history.length > 1 && "[PB]"}
                           </span>
                         )}
                       </div>
-                      <span className="text-neutral-600">
-                        {new Date(attempt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      <span className="text-neutral-600 text-[10px]">
+                        {new Date(attempt.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </span>
-                    </div>
+                    </motion.div>
                   ))
                 )}
               </div>
