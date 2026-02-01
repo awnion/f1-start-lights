@@ -13,7 +13,7 @@ const RESULT_COOLDOWN_MS = 600;
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
-  time: number;
+  time: number; // Negative for jump starts (ms early), Positive for reaction (seconds)
   timestamp: number;
 }
 const PRO_BENCHMARKS = [
@@ -32,6 +32,7 @@ export function HomePage() {
   const activeTimersRef = useRef<number[]>([]);
   const processingRef = useRef<boolean>(false);
   const lastActionTimeRef = useRef<number>(0);
+  const expectedLightsOutRef = useRef<number>(0);
   useEffect(() => {
     document.title = "F1 START LIGHTS";
   }, []);
@@ -80,18 +81,20 @@ export function HomePage() {
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
-    // After the 5th light is on (at 5s), wait exactly 1s before starting the random hold
-    const prepareTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2500 + 500; // 0.5s to 3s hold for realism
-      const holdTimer = window.setTimeout(() => {
+    // High-Fidelity F1 Timing: Start random hold IMMEDIATELY after 5th light (at 5.0s)
+    const holdTriggerTimer = window.setTimeout(() => {
+      const randomHold = Math.random() * 2800 + 200; // 0.2s to 3s random hold
+      // Calculate when lights SHOULD go out for jump-start precision
+      expectedLightsOutRef.current = performance.now() + randomHold;
+      const goTimer = window.setTimeout(() => {
         const now = performance.now();
         lightsOutTimeRef.current = now;
         setGameState('WAITING');
         setActiveLights(0);
       }, randomHold);
-      activeTimersRef.current.push(holdTimer);
-    }, 6000); // 5s for sequence + 1s hold stability
-    activeTimersRef.current.push(prepareTimer);
+      activeTimersRef.current.push(goTimer);
+    }, 5000); 
+    activeTimersRef.current.push(holdTriggerTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent | React.PointerEvent) => {
     if (e) {
@@ -108,9 +111,7 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
-    // 1. Debounce rapid spam
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
-    // 2. Prevent double processing
     if (processingRef.current) return;
     if (gameState === 'IDLE') {
       lastActionTimeRef.current = now;
@@ -127,9 +128,14 @@ export function HomePage() {
       lastActionTimeRef.current = now;
       processingRef.current = true;
       clearAllTimers();
+      // Calculate negative reaction (how many seconds early)
+      // If we don't have expectedLightsOut yet (before 5s), use a huge negative or 0
+      const jumpTime = expectedLightsOutRef.current > 0 
+        ? (now - expectedLightsOutRef.current) / 1000 
+        : -1.0;
       setGameState('JUMP_START');
-      setLastReaction(0);
-      setHistory(prev => [{ id: crypto.randomUUID(), time: 0, timestamp: Date.now() }, ...prev].slice(0, 50));
+      setLastReaction(jumpTime);
+      setHistory(prev => [{ id: crypto.randomUUID(), time: jumpTime, timestamp: Date.now() }, ...prev].slice(0, 50));
       return;
     }
     if (gameState === 'WAITING') {
@@ -166,7 +172,7 @@ export function HomePage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleTrigger]);
   const getPerformanceMessage = (time: number) => {
-    if (time === 0) return { label: 'JUMP START', color: 'text-red-500' };
+    if (time <= 0) return { label: 'JUMP START', color: 'text-red-500' };
     if (time < 0.180) return { label: 'GODLIKE REFLEXES', color: 'text-emerald-400' };
     if (time < 0.230) return { label: 'F1 LEVEL', color: 'text-green-400' };
     if (time < 0.300) return { label: 'EXCELLENT', color: 'text-blue-400' };
@@ -174,7 +180,7 @@ export function HomePage() {
   };
   const clearData = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Wipe all session records?")) {
+    if (window.confirm("ARE YOU SURE? This will permanently wipe all session records.")) {
       setHistory([]);
       localStorage.removeItem(STORAGE_KEY);
       resetToIdle();
@@ -186,7 +192,7 @@ export function HomePage() {
   }, [history]);
   return (
     <div
-      className="min-h-screen bg-neutral-950 flex flex-col items-center touch-none overflow-x-hidden select-none relative"
+      className="min-h-screen bg-neutral-950 flex flex-col items-center touch-none select-none relative"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger="true"]')) return;
@@ -254,7 +260,10 @@ export function HomePage() {
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch' : 'text-accent',
                       isNewRecord && "animate-glitch text-amber-400"
                     )}>
-                      {gameState === 'JUMP_START' ? 'JUMP' : `${lastReaction?.toFixed(3)}s`}
+                      {gameState === 'JUMP_START' 
+                        ? (lastReaction && lastReaction < 0 ? `${lastReaction.toFixed(3)}s` : 'JUMP') 
+                        : `${lastReaction?.toFixed(3)}s`
+                      }
                     </p>
                     {isNewRecord && (
                       <div className="absolute -top-4 -right-2 sm:-top-8 sm:-right-10 bg-amber-500 text-black text-[9px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 font-black uppercase shadow-glow z-20 border-2 border-black transform rotate-12 whitespace-nowrap animate-bounce">
@@ -346,8 +355,8 @@ export function HomePage() {
                     <div key={attempt.id} className="flex items-center justify-between text-[10px] font-mono border-b border-neutral-800/20 pb-2 last:border-0">
                       <div className="flex items-center gap-3">
                         <span className="text-neutral-700 w-5">#{history.length - idx}</span>
-                        {attempt.time === 0 ? (
-                          <span className="text-red-500 font-black italic uppercase">Jump</span>
+                        {attempt.time <= 0 ? (
+                          <span className="text-red-500 font-black italic uppercase">Jump ({attempt.time.toFixed(3)}s)</span>
                         ) : (
                           <span className={cn("font-bold", attempt.time <= bestTime && history.length > 1 ? "text-accent" : "text-neutral-400")}>
                             {attempt.time.toFixed(3)}s
@@ -365,6 +374,7 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
+      {/* Screen Effects Overlay */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.2),rgba(0,255,0,0.1),rgba(0,0,255,0.2))] bg-[length:100%_4px,3px_100%]" />
         <div className="absolute inset-0 opacity-[0.01] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
