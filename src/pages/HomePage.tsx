@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { RotateCcw, Zap, Cpu, Trophy, Star } from 'lucide-react';
+import { RotateCcw, Zap, Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { cn } from '@/lib/utils';
@@ -75,7 +75,7 @@ export function HomePage() {
     clearAllTimers();
     processingRef.current = false;
     lightsOutTimeRef.current = 0;
-    expectedLightsOutRef.current = 0;
+    expectedLightsOutRef.current = 0; // Explicitly reset before new run
     setGameState('COUNTDOWN');
     setActiveLights(0);
     setLastReaction(null);
@@ -115,21 +115,21 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
+    // Immediate early exit check for double-tap/noise
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
+    const previousActionTime = lastActionTimeRef.current;
+    lastActionTimeRef.current = now; // Update timestamp immediately to block concurrent events
     if (processingRef.current) return;
     if (gameState === 'IDLE') {
-      lastActionTimeRef.current = now;
       startSequence();
       return;
     }
     if (gameState === 'RESULT' || gameState === 'JUMP_START') {
-      if (now - lastActionTimeRef.current < RESULT_COOLDOWN_MS) return;
-      lastActionTimeRef.current = now;
+      if (now - previousActionTime < RESULT_COOLDOWN_MS) return;
       startSequence();
       return;
     }
     if (gameState === 'COUNTDOWN') {
-      lastActionTimeRef.current = now;
       processingRef.current = true;
       clearAllTimers();
       const jumpTime = expectedLightsOutRef.current > 0
@@ -141,7 +141,6 @@ export function HomePage() {
       return;
     }
     if (gameState === 'WAITING') {
-      lastActionTimeRef.current = now;
       processingRef.current = true;
       const reaction = (now - lightsOutTimeRef.current) / 1000;
       const isPB = reaction > 0 && reaction < bestTime;
@@ -239,7 +238,7 @@ export function HomePage() {
                 >
                   <div className="relative inline-block" data-no-trigger="true">
                     <p className={cn(
-                      "text-4xl sm:text-7xl lg:text-8xl font-black tabular-nums tracking-tighter leading-none px-4 uppercase",
+                      "text-4xl sm:text-7xl lg:text-8xl font-black tabular-nums tracking-tighter leading-none px-4 uppercase font-mono",
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch whitespace-nowrap' : 'text-accent glow-green',
                       isNewRecord && "animate-glitch text-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.5)]"
                     )}>
