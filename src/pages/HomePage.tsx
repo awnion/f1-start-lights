@@ -33,7 +33,7 @@ export function HomePage() {
   const lastActionTimeRef = useRef<number>(0);
   const expectedLightsOutRef = useRef<number>(0);
   useEffect(() => {
-    document.title = "F1 START LIGHTS | Reflex Test";
+    document.title = "F1 START LIGHTS | High-Precision Reflex";
   }, []);
   const [history, setHistory] = useState<Attempt[]>(() => {
     try {
@@ -87,7 +87,7 @@ export function HomePage() {
       activeTimersRef.current.push(timer);
     }
     const holdTriggerTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200; 
+      const randomHold = Math.random() * 2800 + 400; // Increased min hold slightly for realism
       expectedLightsOutRef.current = performance.now() + randomHold;
       const goTimer = window.setTimeout(() => {
         const now = performance.now();
@@ -197,6 +197,10 @@ export function HomePage() {
               F1 START LIGHTS
             </h1>
           </div>
+          <div className="hidden sm:block text-right">
+            <p className="text-[10px] text-neutral-500 uppercase font-black tracking-widest">System Status</p>
+            <p className="text-xs text-emerald-500 font-bold uppercase animate-pulse">Telemetry Active</p>
+          </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
           <div className="w-full flex justify-center items-start">
@@ -211,7 +215,7 @@ export function HomePage() {
                   className="space-y-4"
                 >
                   <p className="text-neutral-400 font-bold tracking-[0.5em] uppercase text-xs sm:text-lg animate-pulse">
-                    Tap or Press Space to Start
+                    Tap or Press Space to Start Sequence
                   </p>
                 </motion.div>
               )}
@@ -237,9 +241,9 @@ export function HomePage() {
                 >
                   <div className="relative inline-block" data-no-trigger="true">
                     <p className={cn(
-                      "text-4xl sm:text-7xl lg:text-8xl font-black tabular-nums tracking-tighter leading-none px-4 uppercase font-mono",
+                      "text-5xl sm:text-7xl lg:text-9xl font-black tabular-nums tracking-tighter leading-none px-4 uppercase font-mono transition-all duration-300",
                       gameState === 'JUMP_START' ? 'text-red-500 animate-glitch whitespace-nowrap' : 'text-accent glow-green',
-                      isNewRecord && "animate-glitch text-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.5)]"
+                      isNewRecord && "text-amber-400 drop-shadow-[0_0_30px_rgba(251,191,36,0.5)]"
                     )}>
                       {gameState === 'JUMP_START'
                         ? 'JUMP START'
@@ -247,9 +251,13 @@ export function HomePage() {
                       }
                     </p>
                     {isNewRecord && (
-                      <div className="absolute -top-3 -right-2 sm:-top-5 sm:-right-8 bg-amber-500 text-black text-[8px] sm:text-[10px] px-2 sm:px-3 py-1 sm:py-1.5 font-black uppercase shadow-glow z-20 border-2 border-black transform rotate-12 whitespace-nowrap animate-bounce">
+                      <motion.div 
+                        initial={{ scale: 0, rotate: -20 }}
+                        animate={{ scale: 1, rotate: 12 }}
+                        className="absolute -top-3 -right-2 sm:-top-8 sm:-right-10 bg-amber-500 text-black text-[10px] sm:text-xs px-2 sm:px-4 py-1 sm:py-2 font-black uppercase shadow-glow z-20 border-2 border-black transform whitespace-nowrap"
+                      >
                         NEW BEST
-                      </div>
+                      </motion.div>
                     )}
                   </div>
                   <div className="flex flex-col items-center gap-3 sm:gap-5 w-full px-4" data-no-trigger="true">
@@ -276,27 +284,27 @@ export function HomePage() {
             <div className="space-y-0">
               {PRO_BENCHMARKS.map((pro, idx) => (
                 <div key={idx} className="flex justify-between items-center py-5 border-b border-neutral-800/40 last:border-0 hover:bg-white/[0.02] transition-colors group px-1">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="w-10 flex items-center justify-center opacity-20">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="w-8 flex-shrink-0 flex items-center justify-center opacity-20">
                       <Zap className="w-4 h-4 text-neutral-400" />
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-neutral-200 font-bold uppercase text-sm sm:text-base leading-tight">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-neutral-200 font-bold uppercase text-sm sm:text-base leading-tight truncate">
                         {pro.name}
                       </span>
-                      <span className="text-[10px] text-neutral-600 uppercase tracking-widest font-black">
+                      <span className="text-[10px] text-neutral-600 uppercase tracking-widest font-black truncate">
                         {pro.label}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 ml-4 flex-shrink-0">
                     <span className={cn(
-                      "font-black tabular-nums font-mono text-xl sm:text-2xl tracking-tighter leading-none",
+                      "font-black tabular-nums font-mono text-xl sm:text-2xl tracking-tighter leading-none w-24 text-right",
                       bestTime <= pro.time ? "text-accent" : "text-neutral-600"
                     )}>
                       {pro.time.toFixed(3)}s
                     </span>
-                    <div className="w-6 flex items-center justify-center">
+                    <div className="w-8 flex-shrink-0 flex items-center justify-center">
                       {bestTime <= pro.time && <Zap className="w-4 h-4 text-amber-500 animate-pulse" />}
                     </div>
                   </div>
@@ -308,37 +316,37 @@ export function HomePage() {
             <div className="space-y-0 min-h-[300px] flex flex-col">
               {topTimes.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-neutral-800">
-                  <p className="text-xs uppercase font-bold tracking-[0.4em] opacity-40">Awaiting your first run</p>
+                  <p className="text-xs uppercase font-bold tracking-[0.4em] opacity-40">Awaiting Telemetry</p>
                 </div>
               ) : (
                 topTimes.map((attempt, idx) => {
                   const perf = getPerformanceMessage(attempt.time);
                   return (
                     <div key={attempt.id} className="flex items-center justify-between py-5 border-b border-neutral-800/40 last:border-0 hover:bg-white/[0.02] transition-colors group px-1">
-                      <div className="flex items-center gap-4 flex-1">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
                         <span className={cn(
-                          "text-xl sm:text-2xl font-black italic w-10 text-center leading-none",
+                          "text-xl sm:text-2xl font-black italic w-8 flex-shrink-0 text-center leading-none",
                           idx === 0 ? "text-amber-500" : "text-neutral-800"
                         )}>
                           #{idx + 1}
                         </span>
-                        <div className="flex flex-col">
-                          <span className={cn("font-black text-sm sm:text-base uppercase tracking-wider leading-tight", perf.color)}>
+                        <div className="flex flex-col min-w-0">
+                          <span className={cn("font-black text-sm sm:text-base uppercase tracking-wider leading-tight truncate", perf.color)}>
                             {perf.label}
                           </span>
-                          <span className="text-[10px] text-neutral-600 uppercase font-black tracking-widest">
+                          <span className="text-[10px] text-neutral-600 uppercase font-black tracking-widest truncate">
                             {new Date(attempt.timestamp).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 ml-4 flex-shrink-0">
                         <span className={cn(
-                          "font-black tabular-nums font-mono text-xl sm:text-2xl tracking-tighter leading-none",
+                          "font-black tabular-nums font-mono text-xl sm:text-2xl tracking-tighter leading-none w-24 text-right",
                           idx === 0 ? "text-accent" : "text-white"
                         )}>
                           {attempt.time.toFixed(3)}s
                         </span>
-                        <div className="w-6" />
+                        <div className="w-8 flex-shrink-0" />
                       </div>
                     </div>
                   );
