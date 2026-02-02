@@ -1,6 +1,6 @@
 # Cloudflare Full-Stack React Template
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/awnion/f1-start-lights)
 
 A production-ready full-stack starter template for Cloudflare Pages and Workers. Build modern web apps with React, Tailwind CSS, shadcn/ui, Hono API routes, TanStack Query, and TypeScript. Features hot-reloading development, automatic asset bundling, and seamless deployment to Cloudflare.
 
@@ -118,7 +118,7 @@ bun deploy
 
 This builds assets and deploys via Wrangler.
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/awnion/f1-start-lights)
 
 ### Custom Deployment
 
