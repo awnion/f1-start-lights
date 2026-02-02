@@ -16,10 +16,7 @@ export function Semaphore({ lightsActive }: SemaphoreProps) {
             {/* CRITICAL F1 RULE: Top row ALWAYS off/black—no red/glow. */}
             {/* Top Light Unit (Permanently Inactive/Black) */}
             <div className="w-[65%] relative z-20">
-              <div className="w-full aspect-square rounded-full bg-neutral-900/50 border-neutral-800 border-[1px] sm:border-2 shadow-inner transition-none overflow-hidden">
-                {/* Simulated Glass Texture */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-              </div>
+              <div className="w-full aspect-square rounded-full bg-neutral-900 transition-none overflow-hidden" />
             </div>
             {/* Bottom Light Unit (Active Sequence) */}
             <div className="w-[65%] relative z-20">
