@@ -1,3 +1,4 @@
+// CRITICAL RULE: NEVER add telemetry/sync/buffer/version/status UI/text/comments. Keep UI minimal/clean—no extras.
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { RotateCcw, Zap, Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -87,7 +88,7 @@ export function HomePage() {
       activeTimersRef.current.push(timer);
     }
     const holdTriggerTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 400; // Increased min hold slightly for realism
+      const randomHold = Math.random() * 2800 + 400;
       expectedLightsOutRef.current = performance.now() + randomHold;
       const goTimer = window.setTimeout(() => {
         const now = performance.now();
@@ -197,10 +198,6 @@ export function HomePage() {
               F1 START LIGHTS
             </h1>
           </div>
-          <div className="hidden sm:block text-right">
-            <p className="text-[10px] text-neutral-500 uppercase font-black tracking-widest">System Status</p>
-            <p className="text-xs text-emerald-500 font-bold uppercase animate-pulse">Telemetry Active</p>
-          </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-start gap-8 sm:gap-12 md:gap-16">
           <div className="w-full flex justify-center items-start">
@@ -251,7 +248,7 @@ export function HomePage() {
                       }
                     </p>
                     {isNewRecord && (
-                      <motion.div 
+                      <motion.div
                         initial={{ scale: 0, rotate: -20 }}
                         animate={{ scale: 1, rotate: 12 }}
                         className="absolute -top-3 -right-2 sm:-top-8 sm:-right-10 bg-amber-500 text-black text-[10px] sm:text-xs px-2 sm:px-4 py-1 sm:py-2 font-black uppercase shadow-glow z-20 border-2 border-black transform whitespace-nowrap"
@@ -316,7 +313,7 @@ export function HomePage() {
             <div className="space-y-0 min-h-[300px] flex flex-col">
               {topTimes.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-neutral-800">
-                  <p className="text-xs uppercase font-bold tracking-[0.4em] opacity-40">Awaiting Telemetry</p>
+                  <p className="text-xs uppercase font-bold tracking-[0.4em] opacity-40">Awaiting Results</p>
                 </div>
               ) : (
                 topTimes.map((attempt, idx) => {
@@ -356,6 +353,7 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
+      {/* Screen Effects Overlay */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
         <div className="absolute inset-0 opacity-[0.05] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.1),rgba(0,255,0,0.05),rgba(0,0,255,0.1))] bg-[length:100%_3px,2px_100%]" />
         <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />

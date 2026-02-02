@@ -16,12 +16,9 @@ export function RetroCard({ children, title, className }: RetroCardProps) {
       <div className="bg-neutral-900/90 border border-neutral-800 p-6 sm:p-8 h-full relative overflow-hidden flex flex-col">
         {title && (
           <div className="mb-8 flex items-center justify-between border-b border-neutral-800/60 pb-5 h-8 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-primary font-black tracking-[0.2em] uppercase text-sm sm:text-base leading-none">
-                {title}
-              </h3>
-            </div>
-            <div className="w-2 h-2 bg-primary/30 animate-pulse rounded-full" />
+            <h3 className="text-primary font-black tracking-[0.2em] uppercase text-sm sm:text-base leading-none">
+              {title}
+            </h3>
           </div>
         )}
         <div className="relative z-10 flex-1">

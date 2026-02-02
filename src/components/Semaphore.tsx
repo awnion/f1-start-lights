@@ -1,3 +1,4 @@
+// CRITICAL RULE: NEVER add telemetry/sync/buffer/version/status UI/text/comments. Keep UI minimal/clean—no extras.
 // CRITICAL F1 RULE: Top row ALWAYS off/black—no red/glow. Bottom only active (i < lightsActive). Never change top.
 import React from 'react';
 import { cn } from '@/lib/utils';
@@ -13,7 +14,6 @@ export function Semaphore({ lightsActive }: SemaphoreProps) {
           <div className="h-8 sm:h-16 w-3 sm:w-6 bg-neutral-800 rounded-t-sm shadow-[inset_0_4px_15px_rgba(0,0,0,0.8),2px_2px_10px_rgba(0,0,0,0.5)] flex-shrink-0 relative z-10" />
           {/* Light Pod Wrapper */}
           <div className="w-full aspect-[4/9] min-h-[140px] sm:min-h-[220px] bg-neutral-950 rounded-sm sm:rounded-lg border-2 border-neutral-800 flex flex-col items-center justify-evenly shadow-[inset_0_0_50px_rgba(0,0,0,1)] relative overflow-hidden">
-            {/* CRITICAL F1 RULE: Top row ALWAYS off/black—no red/glow. */}
             {/* Top Light Unit (Permanently Inactive/Black) */}
             <div className="w-[65%] relative z-20">
               <div className="w-full aspect-square rounded-full bg-neutral-900 transition-none overflow-hidden" />
@@ -46,7 +46,7 @@ export function Semaphore({ lightsActive }: SemaphoreProps) {
       ))}
       {/* Background Decor - Blueprint Grid */}
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-[linear-gradient(90deg,transparent_98%,white_100%),linear-gradient(0deg,transparent_98%,white_100%)] bg-[length:40px_40px]" />
-      {/* Dynamic Ambient Glow - Smooth transition logic */}
+      {/* Dynamic Ambient Glow */}
       <div className={cn(
         "absolute inset-0 transition-all duration-300 ease-in-out pointer-events-none",
         lightsActive > 0 ? "opacity-30 bg-red-900/40" : "opacity-0"
