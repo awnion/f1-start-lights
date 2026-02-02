@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Semaphore } from '@/components/Semaphore';
 import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
-const STORAGE_KEY = 'f1_start_lights_v1';
+const STORAGE_KEY = 'f1_start_lights_v2';
 const INPUT_DEBOUNCE_MS = 100;
 const RESULT_COOLDOWN_MS = 800;
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
@@ -33,8 +33,11 @@ export function HomePage() {
   const processingRef = useRef<boolean>(false);
   const lastActionTimeRef = useRef<number>(0);
   const expectedLightsOutRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     document.title = "F1 START LIGHTS | High-Precision Reflex";
+    // Ensure the container gets focus for keyboard events
+    containerRef.current?.focus();
   }, []);
   const [history, setHistory] = useState<Attempt[]>(() => {
     try {
@@ -81,14 +84,16 @@ export function HomePage() {
     setActiveLights(0);
     setLastReaction(null);
     setIsNewRecord(false);
+    // Sequential lighting (1-5 seconds)
     for (let i = 1; i <= 5; i++) {
       const timer = window.setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
+    // Randomized hold (0.5s - 3.0s as per F1 procedures)
     const holdTriggerTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 400;
+      const randomHold = Math.random() * 2500 + 500; 
       expectedLightsOutRef.current = performance.now() + randomHold;
       const goTimer = window.setTimeout(() => {
         const now = performance.now();
@@ -108,11 +113,12 @@ export function HomePage() {
     clearAllTimers();
     processingRef.current = false;
     lightsOutTimeRef.current = 0;
-    expectedLightsOutRef.current = 0;
+    expectedLightsOutRef.current = 0; // CRITICAL: Reset timing ref
     setGameState('IDLE');
     setActiveLights(0);
     setLastReaction(null);
     setIsNewRecord(false);
+    containerRef.current?.focus();
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
@@ -181,7 +187,9 @@ export function HomePage() {
   };
   return (
     <div
-      className="min-h-screen bg-neutral-950 flex flex-col items-center relative select-none"
+      ref={containerRef}
+      tabIndex={0}
+      className="min-h-screen bg-neutral-950 flex flex-col items-center relative select-none outline-none focus:outline-none"
       onPointerDown={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest('button') || target.closest('a') || target.closest('[data-no-trigger="true"]')) return;
@@ -278,7 +286,7 @@ export function HomePage() {
         </main>
         <div className="mt-8 sm:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8" data-no-trigger="true">
           <RetroCard title="F1 Driver Benchmarks">
-            <div className="space-y-0">
+            <div className="space-y-0 min-h-[300px]">
               {PRO_BENCHMARKS.map((pro, idx) => (
                 <div key={idx} className="flex justify-between items-center py-5 border-b border-neutral-800/40 last:border-0 hover:bg-white/[0.02] transition-colors group px-1">
                   <div className="flex items-center gap-4 flex-1 min-w-0">

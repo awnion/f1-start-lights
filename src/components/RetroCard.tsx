@@ -15,7 +15,7 @@ export function RetroCard({ children, title, className }: RetroCardProps) {
       <div className="absolute -bottom-[2px] -right-[2px] w-4 h-4 border-b-2 border-r-2 border-primary z-20 pointer-events-none" />
       <div className="bg-neutral-900/90 border border-neutral-800 p-6 sm:p-8 h-full relative overflow-hidden flex flex-col">
         {title && (
-          <div className="mb-8 flex items-center justify-between border-b border-neutral-800/60 pb-5 h-8 flex-shrink-0">
+          <div className="mb-6 flex items-center justify-between border-b border-neutral-800/60 pb-5 min-h-[2rem] flex-shrink-0">
             <h3 className="text-primary font-black tracking-[0.2em] uppercase text-sm sm:text-base leading-none">
               {title}
             </h3>

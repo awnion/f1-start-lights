@@ -36,10 +36,10 @@
   }
   @keyframes glitch {
     0% { transform: translate(0); }
-    20% { transform: translate(-3px, 3px); }
-    40% { transform: translate(-3px, -3px); }
-    60% { transform: translate(3px, 3px); }
-    80% { transform: translate(3px, -3px); }
+    20% { transform: translate(-1.5px, 1.5px); }
+    40% { transform: translate(-1.5px, -1.5px); }
+    60% { transform: translate(1.5px, 1.5px); }
+    80% { transform: translate(1.5px, -1.5px); }
     100% { transform: translate(0); }
   }
   .animate-glitch {
