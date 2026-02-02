@@ -3,23 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="https://img.icons8.com/ios-filled/50/ff0033/f1-race-car-top-view.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <meta name="theme-color" content="#0a0a0a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>F1 START LIGHTS</title>
     <meta name="description" content="A high-precision F1 start lights simulator with millisecond-accurate reaction tracking and a retro neon aesthetic." />
     <style>
-      /* Ensure meaningful scrolling while preventing elastic pull-to-refresh on mobile */
+      /* Support natural scrolling and prevent horizontal wobble */
       html, body {
-        height: 100%;
+        min-height: 100%;
         margin: 0;
         padding: 0;
-        overscroll-behavior: none;
         background-color: #0a0a0a;
+        overflow-x: hidden;
+        overflow-y: auto;
       }
       #root {
-        min-height: 100%;
+        min-height: 100vh;
         display: flex;
         flex-direction: column;
       }

@@ -17,13 +17,14 @@
   html {
     scroll-behavior: smooth;
     background-color: #0a0a0a;
-    user-select: none;
     -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
   }
   body {
-    @apply bg-background text-foreground font-mono overflow-x-hidden;
+    @apply bg-background text-foreground font-mono;
     background-color: #0a0a0a;
+    overflow-x: hidden;
+    overflow-y: auto;
+    min-height: 100%;
   }
 }
 @layer utilities {
@@ -45,4 +46,9 @@
     animation: glitch 0.15s cubic-bezier(.25,.46,.45,.94) both infinite;
     text-shadow: 2px 0 #ff0033, -2px 0 #39ff14;
   }
+}
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
