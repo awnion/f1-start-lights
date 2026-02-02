@@ -8,7 +8,7 @@ import { RetroCard } from '@/components/RetroCard';
 import { Button } from '@/components/ui/button';
 const STORAGE_KEY = 'f1_start_lights_v1';
 const INPUT_DEBOUNCE_MS = 100;
-const RESULT_COOLDOWN_MS = 500;
+const RESULT_COOLDOWN_MS = 800; // Increased slightly to prevent accidental double-starts
 type GameState = 'IDLE' | 'COUNTDOWN' | 'WAITING' | 'RESULT' | 'JUMP_START';
 interface Attempt {
   id: string;
@@ -33,7 +33,7 @@ export function HomePage() {
   const lastActionTimeRef = useRef<number>(0);
   const expectedLightsOutRef = useRef<number>(0);
   useEffect(() => {
-    document.title = "F1 START LIGHTS";
+    document.title = "F1 START LIGHTS | Reflex Test";
   }, []);
   const [history, setHistory] = useState<Attempt[]>(() => {
     try {
@@ -73,6 +73,7 @@ export function HomePage() {
   }, [history]);
   const startSequence = useCallback(() => {
     clearAllTimers();
+    // Explicitly reset timing refs to prevent stale measurements
     processingRef.current = false;
     lightsOutTimeRef.current = 0;
     expectedLightsOutRef.current = 0;
@@ -80,23 +81,25 @@ export function HomePage() {
     setActiveLights(0);
     setLastReaction(null);
     setIsNewRecord(false);
+    // Sequence 1-5 lights
     for (let i = 1; i <= 5; i++) {
       const timer = window.setTimeout(() => {
         setActiveLights(i);
       }, i * 1000);
       activeTimersRef.current.push(timer);
     }
+    // Random hold after 5 lights are on
     const holdTriggerTimer = window.setTimeout(() => {
-      const randomHold = Math.random() * 2800 + 200;
+      const randomHold = Math.random() * 2800 + 200; // 0.2s to 3s hold
       expectedLightsOutRef.current = performance.now() + randomHold;
       const goTimer = window.setTimeout(() => {
         const now = performance.now();
         lightsOutTimeRef.current = now;
         setGameState('WAITING');
-        setActiveLights(0);
+        setActiveLights(0); // Lights out
       }, randomHold);
       activeTimersRef.current.push(goTimer);
-    }, 5000);
+    }, 5000); // Trigger random hold calculation exactly when 5th light is on
     activeTimersRef.current.push(holdTriggerTimer);
   }, [clearAllTimers]);
   const resetToIdle = useCallback((e?: React.MouseEvent | React.PointerEvent) => {
@@ -115,6 +118,7 @@ export function HomePage() {
   }, [clearAllTimers]);
   const handleTrigger = useCallback(() => {
     const now = performance.now();
+    // Prevent double-taps/keyboard repeats
     if (now - lastActionTimeRef.current < INPUT_DEBOUNCE_MS) return;
     const previousActionTime = lastActionTimeRef.current;
     lastActionTimeRef.current = now;
@@ -124,6 +128,7 @@ export function HomePage() {
       return;
     }
     if (gameState === 'RESULT' || gameState === 'JUMP_START') {
+      // Cooldown to prevent accidental restarts when viewing results
       if (now - previousActionTime < RESULT_COOLDOWN_MS) return;
       startSequence();
       return;
@@ -131,8 +136,8 @@ export function HomePage() {
     if (gameState === 'COUNTDOWN') {
       processingRef.current = true;
       clearAllTimers();
-      const jumpTime = expectedLightsOutRef.current > 0
-        ? (now - expectedLightsOutRef.current) / 1000
+      const jumpTime = expectedLightsOutRef.current > 0 
+        ? (now - expectedLightsOutRef.current) / 1000 
         : -1.0;
       setGameState('JUMP_START');
       setLastReaction(jumpTime);
@@ -348,6 +353,7 @@ export function HomePage() {
           </RetroCard>
         </div>
       </div>
+      {/* Retro overlays */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
         <div className="absolute inset-0 opacity-[0.05] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%),linear-gradient(90deg,rgba(255,0,0,0.1),rgba(0,255,0,0.05),rgba(0,0,255,0.1))] bg-[length:100%_3px,2px_100%]" />
         <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />

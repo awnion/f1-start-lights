@@ -6,13 +6,13 @@ interface SemaphoreProps {
 }
 export function Semaphore({ lightsActive }: SemaphoreProps) {
   return (
-    <div className="w-full flex flex-row items-start justify-center gap-1.5 xs:gap-3 sm:gap-4 md:gap-6 px-2 sm:px-8 py-4 sm:py-8 bg-neutral-900/95 border-b-4 border-neutral-800 shadow-[0_20px_60px_rgba(0,0,0,0.8)] relative overflow-hidden">
+    <div className="w-full flex flex-row items-start justify-center gap-2 sm:gap-4 md:gap-6 px-4 sm:px-8 py-4 sm:py-8 bg-neutral-900/95 border-b-4 border-neutral-800 shadow-[0_20px_60px_rgba(0,0,0,0.8)] relative overflow-hidden">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="flex flex-col items-center flex-1 max-w-[140px]">
           {/* Hanging Connector Rod */}
-          <div className="h-4 sm:h-12 w-1.5 sm:w-5 bg-neutral-800 rounded-t-sm shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] flex-shrink-0" />
+          <div className="h-6 sm:h-12 w-2 sm:w-5 bg-neutral-800 rounded-t-sm shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] flex-shrink-0" />
           {/* Light Pod Wrapper */}
-          <div className="w-full aspect-[4/9] min-h-[100px] sm:min-h-[160px] bg-neutral-950 rounded-sm sm:rounded-md border-2 border-neutral-800 flex flex-col items-center justify-evenly shadow-[inset_0_0_35px_rgba(0,0,0,1)] relative">
+          <div className="w-full aspect-[4/9] min-h-[120px] sm:min-h-[160px] bg-neutral-950 rounded-sm sm:rounded-md border-2 border-neutral-800 flex flex-col items-center justify-evenly shadow-[inset_0_0_35px_rgba(0,0,0,1)] relative">
             {/* CRITICAL F1 RULE: Top row ALWAYS off/black—no red/glow. Bottom only active (i < lightsActive). Never change top. */}
             {/* Top Light Unit (Permanently Inactive/Black) */}
             <div className="w-[60%] relative z-20">
